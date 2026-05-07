@@ -1,4 +1,4 @@
-# PKU3B 验收报告
+# PKU Blackboard CLI 验收报告
 
 ## 1. 本轮目标
 

@@ -1,4 +1,4 @@
-# PKU3B AI CLI Specification
+# PKU Blackboard CLI Specification
 
 ## 1. Purpose
 
@@ -110,6 +110,10 @@ The product can support those use cases indirectly by being a strong backend for
 ## 6. Reference Sources
 
 Implementation should reuse and merge ideas from these local repositories:
+
+The outward project name is now `PKU Blackboard CLI`, but this implementation explicitly
+references the original `pku3b` base and also preserves a note that the user referred to it as
+`PKL3B`.
 
 - \`/Users/feng/Documents/CODE/GITHUB/pku3b\`
 - \`/Users/feng/Documents/CODE/GITHUB/pku3b_AI\`

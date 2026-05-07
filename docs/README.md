@@ -1,4 +1,4 @@
-# PKU3B AI CLI Docs
+# PKU Blackboard CLI Docs
 
 This folder is the canonical planning and execution surface for the \`pku3b-ai-cli\` upgrade
 inside the real \`/Users/feng/Documents/CODE/GITHUB/pku3b\` repository.

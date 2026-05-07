@@ -1,4 +1,4 @@
-# PKU3b: A Better Black Board for PKUers 🎓
+# PKU Blackboard CLI 🎓
 
 [![Crates.io](https://img.shields.io/crates/v/pku3b)](https://crates.io/crates/pku3b)
 ![Issues](https://img.shields.io/github/issues-search?query=repo%3Asshwy%2Fpku3b%20is%3Aopen&label=issues&color=orange)
@@ -7,6 +7,8 @@
 ![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/sshwy/pku3b/total)
 
 如果这个项目为你带来了便利，不妨给个 star ⭐ 支持一下～
+
+> 说明：这个项目当前实现明确参考了原始 `pku3b`，并按你的要求在文档里显式注明也参考了 `PKL3B` 这个叫法；对外统一项目名使用 `PKU Blackboard CLI`。
 
 pku3b 是一个由 Rust 实现的小巧 (~10MB) 命令行工具，用于爬取北京大学教学网 (<https://course.pku.edu.cn>) 的信息。目前它可以
 
