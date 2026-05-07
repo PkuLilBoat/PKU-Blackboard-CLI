@@ -58,7 +58,7 @@ Those belong in skills or higher-level agents that call this CLI.
 - ship as a single executable without requiring Python, MCP, or a long-running server;
 - expose a command surface that is at least as complete as the union of useful user-facing
   \`pku3b\` features and useful structured-access \`pku3b_AI\` features;
-- provide stable machine-readable JSON output for all major read and write commands;
+- provide stable machine-readable Markdown output for all major read and write commands;
 - support both human CLI usage and AI-skill orchestration;
 - preserve low-level semantics even when command coverage is broad.
 
@@ -78,7 +78,7 @@ This project should compete on product shape, not only on scraping access.
 - simpler deployment than \`pku3b_AI\`;
 - broader structured capability coverage than plain \`pku3b\`;
 - richer command coverage than a "minimal MVP" CLI;
-- deterministic AI-friendly JSON contracts;
+- deterministic AI-friendly Markdown contracts;
 - local-first execution without server orchestration.
 
 ### 4.2 Competitive dimensions
@@ -168,7 +168,7 @@ capability coverage.
 
 ### 7.3 Contract-first
 
-JSON output stability takes priority over terminal prettiness.
+Markdown output stability takes priority over terminal prettiness.
 
 ### 7.4 Installation-first
 

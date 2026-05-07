@@ -39,7 +39,7 @@ Borrow these ideas from the AI-oriented implementation and docs:
 - course tree summary and traversal patterns;
 - title-based find flows for content families;
 - structured course summary and entry shaping;
-- stable JSON envelopes for detail reads and action results;
+- stable Markdown envelopes for detail reads and action results;
 - consistent not-found payload style.
 
 Implication:
@@ -64,7 +64,7 @@ Reason:
 
 The first implementation slice should:
 
-1. add shared JSON helpers inside the Rust CLI layer;
+1. add shared Markdown helpers inside the Rust CLI layer;
 2. apply them to a small number of high-value command families;
 3. preserve current human-readable output for terminal users;
 4. avoid any runtime dependency on the Python stack.

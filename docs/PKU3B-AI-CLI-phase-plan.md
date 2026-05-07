@@ -10,7 +10,7 @@ the Python + MCP orchestration path.
 Recommended shape:
 
 - keep the current Rust runtime in \`pku3b/\` as the lower operational base;
-- keep \`pku3b_AI\` as a reference for structured capability and JSON contract design;
+- keep \`pku3b_AI\` as a reference for structured capability and Markdown contract design;
 - extend the real Rust CLI progressively instead of routing through Python or MCP.
 
 ## 2. Phase map
@@ -25,7 +25,7 @@ Outputs:
 
 - canonical docs in this \`docs/\` folder;
 - milestone definition for the first implementation slice;
-- shared JSON envelope rules;
+- shared Markdown envelope rules;
 - exit-code expectations;
 - credential and config policy.
 
@@ -38,17 +38,17 @@ Definition of done:
 
 Goal:
 
-- create the Rust-side helpers that make broad JSON rollout consistent.
+- create the Rust-side helpers that make broad Markdown rollout consistent.
 
 Outputs:
 
-- shared JSON envelope helpers;
-- one or more command families upgraded to structured JSON;
-- tests for the shared JSON shape.
+- shared Markdown envelope helpers;
+- one or more command families upgraded to structured Markdown;
+- tests for the shared Markdown shape.
 
 Definition of done:
 
-- at least one command family can emit both human-readable output and stable JSON.
+- at least one command family can emit both human-readable output and stable Markdown.
 
 ### Phase 2: migrate high-value structured content
 
@@ -71,7 +71,7 @@ Execution notes:
 
 - prefer reusing existing Blackboard fetch logic from \`pku3b\` and changing the shaping layer
   instead of replacing the lower runtime;
-- normalize document, announcement, and tree payloads into stable JSON rather than adding new ad
+- normalize document, announcement, and tree payloads into stable Markdown rather than adding new ad
   hoc prose output;
 - keep course-scoped IDs and handles explicit so later write-path commands can reuse them.
 
@@ -85,14 +85,14 @@ Outputs:
 
 - deterministic match ordering;
 - explicit not-found and ambiguous-match behavior;
-- consistent JSON envelopes across query families.
+- consistent Markdown envelopes across query families.
 
 Execution notes:
 
 - harden title matching with normalization rules such as whitespace folding and case folding where
   safe;
 - keep query behavior stable enough for shell scripts and higher-level AI agents;
-- document match semantics in help text and JSON payload fields when ambiguity matters.
+- document match semantics in help text and Markdown payload fields when ambiguity matters.
 
 ### Phase 4: extend write-path contracts
 
@@ -102,7 +102,7 @@ Goal:
 
 Outputs:
 
-- JSON action envelopes for downloads and submissions;
+- Markdown action envelopes for downloads and submissions;
 - explicit target paths and side-effect summaries;
 - safety flags or preview paths where appropriate.
 
@@ -122,11 +122,11 @@ Outputs:
 
 Start with this order:
 
-1. shared JSON helpers
-2. cache JSON
-3. announcement JSON
-4. course/coursetable JSON
-5. assignment and video JSON
+1. shared Markdown helpers
+2. cache Markdown
+3. announcement Markdown
+4. course/coursetable Markdown
+5. assignment and video Markdown
 
 Why:
 
@@ -147,9 +147,9 @@ Current status in this thread:
 - course list and entry-link support is now done in Rust
 - deterministic cross-resource \`search\` is now done in Rust
 - normalized deterministic \`find\` matching is now done in Rust, including whitespace-folded and compact title matching
-- tree title lookup now reuses the same normalized query behavior for AI-facing JSON reads and emits `match_type`
-- assignment and video JSON list surfaces now use explicit deterministic tie-break ordering instead of fetch-order-only output
-- real JSON smoke evidence now exists for assignment.download, document.download, and video.download
+- tree title lookup now reuses the same normalized query behavior for AI-facing Markdown reads and emits `match_type`
+- assignment and video Markdown list surfaces now use explicit deterministic tie-break ordering instead of fetch-order-only output
+- real Markdown smoke evidence now exists for assignment.download, document.download, and video.download
 - next recommended slice is broader automated tests and richer write-path verification
 
 ## 4. Live test handoff

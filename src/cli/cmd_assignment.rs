@@ -14,8 +14,8 @@ pub struct CommandAssignment {
     #[command(subcommand)]
     command: AssignmentCommands,
 
-    /// 输出 JSON
-    #[arg(long, default_value = "false")]
+    /// 输出 Markdown
+    #[arg(long = "markdown", visible_alias = "md", alias = "json", default_value = "false")]
     json: bool,
 
     /// 手机令牌码。当需要使用 OTP 登录，但未提供此参数时，将会从命令行交互式读取 OTP 码。
@@ -257,7 +257,7 @@ pub async fn list(
             })
             .collect::<Vec<_>>();
         sort_assignment_records(&mut items);
-        return json_output::write_json(&json_output::ok_items(items)).await;
+        return markdown_output::write_markdown(&markdown_output::ok_items(items)).await;
     }
 
     // prepare output statements
@@ -355,7 +355,7 @@ pub async fn download(
         },
         None => {
             if json {
-                anyhow::bail!("assignment download with --json requires an explicit assignment id")
+                anyhow::bail!("assignment download with --markdown requires an explicit assignment id")
             }
             select_assignment(items).await?
         }
@@ -372,7 +372,7 @@ pub async fn download(
             title: a.2.title().to_owned(),
             path: dir.display().to_string(),
         };
-        json_output::write_json(&json_output::ok_item(item)).await?;
+        markdown_output::write_markdown(&markdown_output::ok_item(item)).await?;
     }
 
     Ok(())
@@ -422,7 +422,7 @@ pub async fn submit(
         },
         None => {
             if json {
-                anyhow::bail!("assignment submit with --json requires an explicit assignment id")
+                anyhow::bail!("assignment submit with --markdown requires an explicit assignment id")
             }
             select_assignment(items).await?
         }
@@ -432,7 +432,7 @@ pub async fn submit(
         Some(path) => path.to_owned(),
         None => {
             if json {
-                anyhow::bail!("assignment submit with --json requires an explicit file path")
+                anyhow::bail!("assignment submit with --markdown requires an explicit file path")
             }
             // list the current dir and use inquire::Select to choose a file
 
@@ -478,7 +478,7 @@ pub async fn submit(
             title: a.title().to_owned(),
             path: path.display().to_string(),
         };
-        json_output::write_json(&json_output::ok_item(item)).await?;
+        markdown_output::write_markdown(&markdown_output::ok_item(item)).await?;
     } else {
         println!(
             "成功将 {GR}{H2}{}{H2:#}{GR:#} 提交至 {MG}{H1}{} {}{H1:#}{MG:#} 课程作业",

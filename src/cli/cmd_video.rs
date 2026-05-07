@@ -12,8 +12,8 @@ pub struct CommandVideo {
     #[command(subcommand)]
     command: VideoCommands,
 
-    /// 输出 JSON
-    #[arg(long, default_value = "false")]
+    /// 输出 Markdown
+    #[arg(long = "markdown", visible_alias = "md", alias = "json", default_value = "false")]
     json: bool,
 
     /// 手机令牌码。当需要使用 OTP 登录，但未提供此参数时，将会从命令行交互式读取 OTP 码。
@@ -125,7 +125,7 @@ pub async fn list(force: bool, cur_term: bool, otp_code: String, json: bool) -> 
             }
         }
         sort_video_records(&mut items);
-        json_output::write_json(&json_output::ok_items(items)).await?;
+        markdown_output::write_markdown(&markdown_output::ok_items(items)).await?;
     } else {
         let mut outbuf = Vec::new();
         let title = "课程回放";
@@ -254,7 +254,7 @@ pub async fn download(
                 title: v.meta().title().to_owned(),
                 output_path: dest.display().to_string(),
             };
-            json_output::write_json(&json_output::ok_item(item)).await?;
+            markdown_output::write_markdown(&markdown_output::ok_item(item)).await?;
         } else {
             println!(
                 "下载完成, 文件保存为: {GR}{H2}{}{H2:#}{GR:#}",

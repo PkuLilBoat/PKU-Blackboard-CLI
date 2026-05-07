@@ -15,7 +15,7 @@ The thread objective is only complete when all of the following are true:
 2. the real implementation base is the Rust repo in `/Users/feng/Documents/CODE/GITHUB/pku3b`;
 3. the target product remains a single-binary, low-level PKU Blackboard CLI;
 4. the upgraded CLI merges useful `pku3b` coverage with the structured resource behaviors borrowed from `pku3b_AI`;
-5. major shipped read and write commands expose stable JSON contracts;
+5. major shipped read and write commands expose stable Markdown contracts;
 6. the runtime does not depend on Python, MCP, or a long-running server;
 7. the shipped surface is verified strongly enough that the docs and tests support the completion claim.
 
@@ -27,8 +27,8 @@ The thread objective is only complete when all of the following are true:
 | docs were moved into the real repo | docs now live under `pku3b/docs/` and are referenced as canonical in `docs/README.md` | done |
 | implementation is based on the Rust repo, not the Python stack | `docs/PKU3B-AI-CLI-goal.md`, `docs/PKU3B-AI-CLI-reuse-audit.md`, `src/cli/mod.rs`, new Rust command files under `src/cli/` | done |
 | single-binary, no Python/MCP runtime dependency | current implementation changes are inside the Rust crate; no runtime Python bridge was added | done for current slice |
-| major read commands expose stable JSON | `course`, `cache`, `announcement`, `document`, `coursetable`, `find`, `search`, `tree`, `video`, `assignment` all have `--json` paths in Rust | done for current milestone |
-| major write commands expose stable JSON | verified action payloads exist for `assignment.download`, `document.download`, `video.download`, and each has a real smoke path recorded in `docs/PKU3B-AI-CLI-testing.md` | done for current milestone |
+| major read commands expose stable Markdown | `course`, `cache`, `announcement`, `document`, `coursetable`, `find`, `search`, `tree`, `video`, `assignment` all have `--markdown` paths in Rust | done for current milestone |
+| major write commands expose stable Markdown | verified action payloads exist for `assignment.download`, `document.download`, `video.download`, and each has a real smoke path recorded in `docs/PKU3B-AI-CLI-testing.md` | done for current milestone |
 | tests and verification support the claim | focused unit tests now cover announcement/course/document/find/search/tree/assignment/video/coursetable contracts, selective cargo tests pass, and multiple live smokes are documented | done for current milestone |
 
 ## 3. Concrete evidence by area
@@ -42,13 +42,13 @@ The thread objective is only complete when all of the following are true:
 - runtime reuse boundary: `docs/PKU3B-AI-CLI-reuse-audit.md`
 - testing contract and live evidence: `docs/PKU3B-AI-CLI-testing.md`
 
-### 3.2 Shared JSON contract layer
+### 3.2 Shared Markdown contract layer
 
-- shared helper: `src/cli/json_output.rs`
+- shared helper: `src/cli/markdown_output.rs`
 - envelope contract: top-level `schema_version = "1"`, `ok`, and `item` or `items`
 - cache envelope and OTP helper checks live in `src/cli/mod.rs`
 - focused unit tests recorded in this thread:
-  - `cargo test json_output -- --nocapture`
+  - `cargo test markdown_output -- --nocapture`
   - `cargo test cli::tests -- --nocapture`
   - current observed results: all passing
 
@@ -68,9 +68,9 @@ The thread objective is only complete when all of the following are true:
 ### 3.4 Deterministic list ordering updates
 
 - course entry sorting plus course record serialization tests: `src/cli/cmd_course.rs`
-- document JSON list ordering, detail attachment serialization, and action payload serialization tests: `src/cli/cmd_document.rs`
-- assignment JSON tie-break ordering and action payload serialization tests: `src/cli/cmd_assignment.rs`
-- video JSON tie-break ordering and action payload serialization tests: `src/cli/cmd_video.rs`
+- document Markdown list ordering, detail attachment serialization, and action payload serialization tests: `src/cli/cmd_document.rs`
+- assignment Markdown tie-break ordering and action payload serialization tests: `src/cli/cmd_assignment.rs`
+- video Markdown tie-break ordering and action payload serialization tests: `src/cli/cmd_video.rs`
 - focused unit tests recorded in this thread:
   - `cargo test cmd_course -- --nocapture`
   - `cargo test cmd_assignment -- --nocapture`
@@ -78,35 +78,35 @@ The thread objective is only complete when all of the following are true:
   - `cargo test cmd_video -- --nocapture`
   - current observed results: all passing
 
-### 3.5 Live JSON smoke evidence
+### 3.5 Live Markdown smoke evidence
 
 Documented in `docs/PKU3B-AI-CLI-testing.md`:
 
-- `cache --json show`
-- `course --json list --all-term`
-- `announcement --json ls --all-term`
+- `cache --markdown show`
+- `course --markdown list --all-term`
+- `announcement --markdown ls --all-term`
 - `course list --all-term`
-- `assignment --json down 889d4593ba2f6606 --dir <tmp> --all-term`
-- `document --json down 5d9f541eaca74f14 --dir <tmp> --all-term`
-- `video --json list --all-term`
-- `tree --json find 12 "Week 1"`
-- `video --json down e619080add7aeb2d -o <tmp> --all-term`
-- `coursetable --json` with the Blackboard calendar fallback path
+- `assignment --markdown down 889d4593ba2f6606 --dir <tmp> --all-term`
+- `document --markdown down 5d9f541eaca74f14 --dir <tmp> --all-term`
+- `video --markdown list --all-term`
+- `tree --markdown find 12 "Week 1"`
+- `video --markdown down e619080add7aeb2d -o <tmp> --all-term`
+- `coursetable --markdown` with the Blackboard calendar fallback path
 
 Observed outcomes in this thread:
 
 - `cargo test` passed with 44 / 44 tests green in the latest retest;
-- `cache --json show`, `course --json list --all-term`, `announcement --json ls --all-term`,
-  `announcement --json show 8e93317d4d8fc22c --all-term`, `document --json list --all-term`,
-  `document --json show 5d9f541eaca74f14 --all-term`, `find --json "week 1"`,
-  `search --json "week 1"`, and `tree --json find 12 "Week 1"` all returned valid JSON in the
+- `cache --markdown show`, `course --markdown list --all-term`, `announcement --markdown ls --all-term`,
+  `announcement --markdown show 8e93317d4d8fc22c --all-term`, `document --markdown list --all-term`,
+  `document --markdown show 5d9f541eaca74f14 --all-term`, `find --markdown "week 1"`,
+  `search --markdown "week 1"`, and `tree --markdown find 12 "Week 1"` all returned valid Markdown in the
   latest retest;
-- action commands returned pure JSON on stdout;
+- action commands returned pure Markdown on stdout;
 - `document.download` produced a real downloaded attachment;
 - `video.download` completed through segment download, merge, ffmpeg conversion, and produced a real mp4 file;
-- `coursetable --json` now succeeds without Python, MCP, or a sidecar service even when portal
+- `coursetable --markdown` now succeeds without Python, MCP, or a sidecar service even when portal
   OTP blocks the exact portal grid path, because the Rust CLI falls back to Blackboard calendar
-  data with a stable JSON envelope.
+  data with a stable Markdown envelope.
 
 ## 4. Residual risks after milestone completion
 
@@ -121,8 +121,8 @@ The documented milestone is complete, but these residual risks still remain:
 The completion claim is now supportable because:
 
 1. the canonical docs live in the real Rust repo and match the implemented command surface;
-2. major shipped read and write command families expose stable JSON through Rust-only runtime paths;
-3. `coursetable --json` now has both focused tests and a fresh live smoke path, even when the
+2. major shipped read and write command families expose stable Markdown through Rust-only runtime paths;
+3. `coursetable --markdown` now has both focused tests and a fresh live smoke path, even when the
    exact portal endpoint is blocked, via the documented Blackboard fallback;
 4. the CLI remains a single binary and does not depend on Python, MCP, or a long-running server.
 
@@ -138,7 +138,7 @@ this folder is now achieved.
 - The intended real user flow is the teaching-site campus-card user login path at
   `https://course.pku.edu.cn/webapps/login/`, and current live behavior still aligns with that
   direct-login-first expectation for Blackboard-facing commands.
-- Blackboard smoke remained healthy after the change: `course --json list --all-term` returned
-  valid JSON with `schema_version = "1"`, `ok = true`, and 17 items.
-- The completion state is now acceptable for the milestone because `coursetable --json` has a
+- Blackboard smoke remained healthy after the change: `course --markdown list --all-term` returned
+  valid Markdown with `schema_version = "1"`, `ok = true`, and 17 items.
+- The completion state is now acceptable for the milestone because `coursetable --markdown` has a
   fresh successful live verification through the Blackboard fallback path.

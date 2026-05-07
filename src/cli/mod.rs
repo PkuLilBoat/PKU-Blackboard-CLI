@@ -14,7 +14,7 @@ mod cmd_tree;
 #[cfg(feature = "ttshitu")]
 mod cmd_ttshitu;
 mod cmd_video;
-mod json_output;
+mod markdown_output;
 mod pbar;
 mod query_match;
 
@@ -124,8 +124,8 @@ enum Commands {
 
     /// 查看缓存大小/清除缓存
     Cache {
-        /// 输出 JSON
-        #[arg(long, default_value = "false")]
+        /// 输出 Markdown
+        #[arg(long = "markdown", visible_alias = "md", alias = "json", default_value = "false")]
         json: bool,
         #[command(subcommand)]
         command: Option<CacheCommands>,
@@ -361,7 +361,7 @@ async fn command_cache_clean(dry_run: bool, json: bool) -> anyhow::Result<()> {
 
     let sizenum = total_bytes as f64 / 1024.0f64.powi(3);
     if json {
-        json_output::write_json(&json_output::ok_item(CacheResult {
+        markdown_output::write_markdown(&markdown_output::ok_item(CacheResult {
             action: if dry_run {
                 "cache.show".to_owned()
             } else {
@@ -437,7 +437,7 @@ mod tests {
 
     #[test]
     fn cache_result_fits_json_envelope() {
-        let value = serde_json::to_value(json_output::ok_item(CacheResult {
+        let value = serde_json::to_value(markdown_output::ok_item(CacheResult {
             action: "cache.show".to_owned(),
             dry_run: true,
             cache_dir: "/tmp/cache".to_owned(),

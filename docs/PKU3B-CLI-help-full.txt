@@ -27,6 +27,7 @@ Options:
   -h, --help     Print help (see more with '--help')
   -V, --version  Print version
 
+
 ## pku3b assignment -h
 
 获取课程作业信息/下载附件/提交作业
@@ -41,9 +42,51 @@ Commands:
 
 Options:
   -f, --force                强制刷新
-      --json                 输出 JSON
+      --markdown             输出 Markdown [aliases: --md]
       --otp-code <OTP_CODE>  手机令牌码。当需要使用 OTP 登录，但未提供此参数时，将会从命令行交互式读取 OTP 码。 [default: ""]
   -h, --help                 Print help
+
+
+## pku3b assignment list -h
+
+查看作业列表，按照截止日期排序
+
+Usage: pku3b assignment list [OPTIONS]
+
+Options:
+  -a, --all       显示所有作业，包括已完成的
+      --all-term  显示所有学期的作业（包括已完成的）
+  -h, --help      Print help
+
+
+## pku3b assignment download -h
+
+下载作业要求和附件到指定文件夹下
+
+Usage: pku3b assignment download [OPTIONS] [ID]
+
+Arguments:
+  [ID]  (Optionl) 作业 ID (ID 形如 `f4f30444c7485d49`, 可通过 `pku3b assignment list` 查看)
+
+Options:
+  -d, --dir <DIR>  文件下载目录 (支持相对路径) [default: .]
+      --all-term   在所有学期的作业范围中查找
+  -h, --help       Print help (see more with '--help')
+
+
+## pku3b assignment submit -h
+
+提交课程作业
+
+Usage: pku3b assignment submit [ID] [PATH]
+
+Arguments:
+  [ID]    作业 ID (形如 `f4f30444c7485d49`, 可通过 `pku3b assignment list` 查看)
+  [PATH]  提交文件路径
+
+Options:
+  -h, --help  Print help (see more with '--help')
+
 
 ## pku3b coursetable -h
 
@@ -54,9 +97,10 @@ Usage: pku3b coursetable [OPTIONS]
 Options:
   -f, --force                强制刷新
   -r, --raw                  显示原始 JSON 数据（用于调试）
-      --json                 输出 JSON 包装结果
+      --markdown             输出 Markdown 包装结果 [aliases: --md]
       --otp-code <OTP_CODE>  手机令牌码。当需要使用 OTP 登录，但未提供此参数时，将会从命令行交互式读取 OTP 码。 [default: ""]
   -h, --help                 Print help
+
 
 ## pku3b course -h
 
@@ -71,9 +115,31 @@ Commands:
 
 Options:
   -f, --force                
-      --json                 
+      --markdown             [aliases: --md]
       --otp-code <OTP_CODE>  [default: ""]
   -h, --help                 Print help
+
+
+## pku3b course list -h
+
+Usage: pku3b course list [OPTIONS]
+
+Options:
+      --all-term  
+  -h, --help      Print help
+
+
+## pku3b course entries -h
+
+Usage: pku3b course entries [OPTIONS] <COURSE_INDEX>
+
+Arguments:
+  <COURSE_INDEX>  
+
+Options:
+      --all-term  
+  -h, --help      Print help
+
 
 ## pku3b announcement -h
 
@@ -88,9 +154,35 @@ Commands:
 
 Options:
   -f, --force                强制刷新
-      --json                 输出 JSON
+      --markdown             输出 Markdown [aliases: --md]
       --otp-code <OTP_CODE>  手机令牌码。当需要使用 OTP 登录，但未提供此参数时，将会从命令行交互式读取 OTP 码。 [default: ""]
   -h, --help                 Print help
+
+
+## pku3b announcement list -h
+
+查看课程公告列表
+
+Usage: pku3b announcement list [OPTIONS]
+
+Options:
+      --all-term  显示所有学期的课程公告
+  -h, --help      Print help
+
+
+## pku3b announcement show -h
+
+按 ID 查看公告详情
+
+Usage: pku3b announcement show [OPTIONS] <ID>
+
+Arguments:
+  <ID>  公告 ID（可通过 `pku3b announcement ls` 查看）
+
+Options:
+      --all-term  在所有学期的课程公告范围中查找
+  -h, --help      Print help
+
 
 ## pku3b document -h
 
@@ -104,9 +196,44 @@ Commands:
 
 Options:
   -f, --force                
-      --json                 
+      --markdown             [aliases: --md]
       --otp-code <OTP_CODE>  [default: ""]
   -h, --help                 Print help
+
+
+## pku3b document list -h
+
+Usage: pku3b document list [OPTIONS]
+
+Options:
+      --all-term  
+  -h, --help      Print help
+
+
+## pku3b document show -h
+
+Usage: pku3b document show [OPTIONS] <ID>
+
+Arguments:
+  <ID>  
+
+Options:
+      --all-term  
+  -h, --help      Print help
+
+
+## pku3b document download -h
+
+Usage: pku3b document download [OPTIONS] [ID]
+
+Arguments:
+  [ID]  
+
+Options:
+  -d, --dir <DIR>  [default: .]
+      --all-term   
+  -h, --help       Print help
+
 
 ## pku3b find -h
 
@@ -122,9 +249,10 @@ Options:
       --kind <KIND>                  仅搜索某一种内容类型，例如 assignment/document/announcement
       --course-index <COURSE_INDEX>  仅在指定课程索引内搜索
       --all-term                     显示所有学期
-      --json                         输出 JSON
+      --markdown                     输出 Markdown [aliases: --md]
       --otp-code <OTP_CODE>          手机令牌码。当需要使用 OTP 登录，但未提供此参数时，将会从命令行交互式读取 OTP 码。 [default: ""]
   -h, --help                         Print help
+
 
 ## pku3b search -h
 
@@ -139,9 +267,10 @@ Options:
   -f, --force                
       --kind <KIND>          仅搜索某一种内容类型，例如 assignment/document/announcement
       --all-term             显示所有学期
-      --json                 输出 JSON
+      --markdown             输出 Markdown [aliases: --md]
       --otp-code <OTP_CODE>  手机令牌码。当需要使用 OTP 登录，但未提供此参数时，将会从命令行交互式读取 OTP 码。 [default: ""]
   -h, --help                 Print help
+
 
 ## pku3b tree -h
 
@@ -155,9 +284,45 @@ Commands:
 
 Options:
   -f, --force                
-      --json                 
+      --markdown             [aliases: --md]
       --otp-code <OTP_CODE>  [default: ""]
   -h, --help                 Print help
+
+
+## pku3b tree list -h
+
+Usage: pku3b tree list <COURSE_INDEX>
+
+Arguments:
+  <COURSE_INDEX>  
+
+Options:
+  -h, --help  Print help
+
+
+## pku3b tree find -h
+
+Usage: pku3b tree find <COURSE_INDEX> <QUERY>
+
+Arguments:
+  <COURSE_INDEX>  
+  <QUERY>         
+
+Options:
+  -h, --help  Print help
+
+
+## pku3b tree kinds -h
+
+Usage: pku3b tree kinds <COURSE_INDEX> <KIND>
+
+Arguments:
+  <COURSE_INDEX>  
+  <KIND>          
+
+Options:
+  -h, --help  Print help
+
 
 ## pku3b video -h
 
@@ -172,9 +337,36 @@ Commands:
 
 Options:
   -f, --force                强制刷新
-      --json                 输出 JSON
+      --markdown             输出 Markdown [aliases: --md]
       --otp-code <OTP_CODE>  手机令牌码。当需要使用 OTP 登录，但未提供此参数时，将会从命令行交互式读取 OTP 码。 [default: ""]
   -h, --help                 Print help
+
+
+## pku3b video list -h
+
+获取课程回放列表
+
+Usage: pku3b video list [OPTIONS]
+
+Options:
+      --all-term  显示所有学期的课程回放
+  -h, --help      Print help
+
+
+## pku3b video download -h
+
+下载课程回放视频 (MP4 格式)，支持断点续传
+
+Usage: pku3b video download [OPTIONS] <ID>
+
+Arguments:
+  <ID>  课程回放 ID (形如 `e780808c9eb81f61`, 可通过 `pku3b video list` 查看)
+
+Options:
+      --all-term         在所有学期的课程回放范围中查找
+  -o, --outdir <OUTDIR>  文件下载目录 (支持相对路径)
+  -h, --help             Print help
+
 
 ## pku3b syllabus -h
 
@@ -193,6 +385,48 @@ Options:
   -d, --dual <DUAL>  双学位类型 [possible values: major, minor]
   -h, --help         Print help
 
+
+## pku3b syllabus show -h
+
+查看选课结果
+
+Usage: pku3b syllabus show
+
+Options:
+  -h, --help  Print help
+
+
+## pku3b syllabus set -h
+
+选择课程并配置快捷选课
+
+Usage: pku3b syllabus set
+
+Options:
+  -h, --help  Print help
+
+
+## pku3b syllabus unset -h
+
+取消课程的快捷选课配置
+
+Usage: pku3b syllabus unset
+
+Options:
+  -h, --help  Print help
+
+
+## pku3b syllabus launch -h
+
+启动自动补退选程序
+
+Usage: pku3b syllabus launch [OPTIONS]
+
+Options:
+  -t, --interval <INTERVAL>  等待间隔（秒）默认为 5s [default: 15]
+  -h, --help                 Print help
+
+
 ## pku3b ttshitu -h
 
 图形验证码识别
@@ -206,6 +440,30 @@ Commands:
 
 Options:
   -h, --help  Print help
+
+
+## pku3b ttshitu init -h
+
+初始化图形验证码识别账户
+
+Usage: pku3b ttshitu init
+
+Options:
+  -h, --help  Print help
+
+
+## pku3b ttshitu test -h
+
+测试图形验证码识别
+
+Usage: pku3b ttshitu test [IMAGE_PATH]
+
+Arguments:
+  [IMAGE_PATH]  
+
+Options:
+  -h, --help  Print help
+
 
 ## pku3b bark -h
 
@@ -221,6 +479,27 @@ Commands:
 Options:
   -h, --help  Print help
 
+
+## pku3b bark init -h
+
+初始化 Bark 通知令牌
+
+Usage: pku3b bark init
+
+Options:
+  -h, --help  Print help
+
+
+## pku3b bark test -h
+
+测试 Bark 通知
+
+Usage: pku3b bark test
+
+Options:
+  -h, --help  Print help
+
+
 ## pku3b thesis-lib -h
 
 学位论文检索
@@ -235,6 +514,36 @@ Commands:
 Options:
   -h, --help  Print help
 
+
+## pku3b thesis-lib search -h
+
+搜索学位论文
+
+Usage: pku3b thesis-lib search <KEYWORD>
+
+Arguments:
+  <KEYWORD>  
+
+Options:
+  -h, --help  Print help
+
+
+## pku3b thesis-lib download -h
+
+下载学位论文并转换为 PDF 文件
+
+Usage: pku3b thesis-lib download [OPTIONS] <KEYID>
+
+Arguments:
+  <KEYID>  学位论文 ID (形如 `hU5a4no4tbM1zJIlMBTdy8YGcsX5YalOoY3wPzTosgs%3D`, 可通过 `pku3b th search [keyword]` 查看)
+
+Options:
+  -o, --outdir <OUTDIR>  文件下载目录 (支持相对路径)
+  -j, --job <JOB>        并发下载页数 [default: 5]
+      --save-image       是否保存每一页的图片
+  -h, --help             Print help
+
+
 ## pku3b init -h
 
 (重新) 初始化用户名/密码
@@ -243,6 +552,7 @@ Usage: pku3b init
 
 Options:
   -h, --help  Print help
+
 
 ## pku3b config -h
 
@@ -257,6 +567,7 @@ Arguments:
 Options:
   -h, --help  Print help
 
+
 ## pku3b cache -h
 
 查看缓存大小/清除缓存
@@ -269,173 +580,6 @@ Commands:
   help   Print this message or the help of the given subcommand(s)
 
 Options:
-      --json  输出 JSON
-  -h, --help  Print help
-
-## pku3b assignment list -h
-
-查看作业列表，按照截止日期排序
-
-Usage: pku3b assignment list [OPTIONS]
-
-Options:
-  -a, --all       显示所有作业，包括已完成的
-      --all-term  显示所有学期的作业（包括已完成的）
+      --markdown  输出 Markdown [aliases: --md]
   -h, --help      Print help
-
-## pku3b assignment download -h
-
-下载作业要求和附件到指定文件夹下
-
-Usage: pku3b assignment download [OPTIONS] [ID]
-
-Arguments:
-  [ID]  (Optionl) 作业 ID (ID 形如 `f4f30444c7485d49`, 可通过 `pku3b assignment list` 查看)
-
-Options:
-  -d, --dir <DIR>  文件下载目录 (支持相对路径) [default: .]
-      --all-term   在所有学期的作业范围中查找
-  -h, --help       Print help (see more with '--help')
-
-## pku3b assignment submit -h
-
-提交课程作业
-
-Usage: pku3b assignment submit [ID] [PATH]
-
-Arguments:
-  [ID]    作业 ID (形如 `f4f30444c7485d49`, 可通过 `pku3b assignment list` 查看)
-  [PATH]  提交文件路径
-
-Options:
-  -h, --help  Print help (see more with '--help')
-
-## pku3b course list -h
-
-Usage: pku3b course list [OPTIONS]
-
-Options:
-      --all-term  
-  -h, --help      Print help
-
-## pku3b course entries -h
-
-Usage: pku3b course entries [OPTIONS] <COURSE_INDEX>
-
-Arguments:
-  <COURSE_INDEX>  
-
-Options:
-      --all-term  
-  -h, --help      Print help
-
-## pku3b announcement list -h
-
-查看课程公告列表
-
-Usage: pku3b announcement list [OPTIONS]
-
-Options:
-      --all-term  显示所有学期的课程公告
-  -h, --help      Print help
-
-## pku3b announcement show -h
-
-按 ID 查看公告详情
-
-Usage: pku3b announcement show [OPTIONS] <ID>
-
-Arguments:
-  <ID>  公告 ID（可通过 `pku3b announcement ls` 查看）
-
-Options:
-      --all-term  在所有学期的课程公告范围中查找
-  -h, --help      Print help
-
-## pku3b document list -h
-
-Usage: pku3b document list [OPTIONS]
-
-Options:
-      --all-term  
-  -h, --help      Print help
-
-## pku3b document show -h
-
-Usage: pku3b document show [OPTIONS] <ID>
-
-Arguments:
-  <ID>  
-
-Options:
-      --all-term  
-  -h, --help      Print help
-
-## pku3b document download -h
-
-Usage: pku3b document download [OPTIONS] [ID]
-
-Arguments:
-  [ID]  
-
-Options:
-  -d, --dir <DIR>  [default: .]
-      --all-term   
-  -h, --help       Print help
-
-## pku3b tree list -h
-
-Usage: pku3b tree list <COURSE_INDEX>
-
-Arguments:
-  <COURSE_INDEX>  
-
-Options:
-  -h, --help  Print help
-
-## pku3b tree find -h
-
-Usage: pku3b tree find <COURSE_INDEX> <QUERY>
-
-Arguments:
-  <COURSE_INDEX>  
-  <QUERY>         
-
-Options:
-  -h, --help  Print help
-
-## pku3b tree kinds -h
-
-Usage: pku3b tree kinds <COURSE_INDEX> <KIND>
-
-Arguments:
-  <COURSE_INDEX>  
-  <KIND>          
-
-Options:
-  -h, --help  Print help
-
-## pku3b video list -h
-
-获取课程回放列表
-
-Usage: pku3b video list [OPTIONS]
-
-Options:
-      --all-term  显示所有学期的课程回放
-  -h, --help      Print help
-
-## pku3b video download -h
-
-下载课程回放视频 (MP4 格式)，支持断点续传
-
-Usage: pku3b video download [OPTIONS] <ID>
-
-Arguments:
-  <ID>  课程回放 ID (形如 `e780808c9eb81f61`, 可通过 `pku3b video list` 查看)
-
-Options:
-      --all-term         在所有学期的课程回放范围中查找
-  -o, --outdir <OUTDIR>  文件下载目录 (支持相对路径)
-  -h, --help             Print help
 

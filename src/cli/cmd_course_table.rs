@@ -17,8 +17,8 @@ pub struct CommandCourseTable {
     #[arg(short, long, default_value = "false")]
     raw: bool,
 
-    /// 输出 JSON 包装结果
-    #[arg(long, default_value = "false")]
+    /// 输出 Markdown 包装结果
+    #[arg(long = "markdown", visible_alias = "md", alias = "json", default_value = "false")]
     json: bool,
 
     /// 手机令牌码。当需要使用 OTP 登录，但未提供此参数时，将会从命令行交互式读取 OTP 码。
@@ -80,7 +80,7 @@ pub async fn run(cmd: CommandCourseTable) -> anyhow::Result<()> {
     if json {
         let item = serde_json::from_str::<serde_json::Value>(&raw_data)
             .unwrap_or_else(|_| serde_json::Value::String(raw_data.clone()));
-        json_output::write_json(&json_output::ok_item(item)).await?;
+        markdown_output::write_markdown(&markdown_output::ok_item(item)).await?;
     } else {
         let mut outbuf = Vec::new();
         if raw {
@@ -270,7 +270,7 @@ async fn blackboard_fallback(force: bool, reason: String) -> anyhow::Result<Cour
 
 async fn write_fallback_output(fallback: CourseTableFallback, json: bool) -> anyhow::Result<()> {
     if json {
-        json_output::write_json(&json_output::ok_item(fallback)).await?;
+        markdown_output::write_markdown(&markdown_output::ok_item(fallback)).await?;
         return Ok(());
     }
 
@@ -376,7 +376,7 @@ mod tests {
                 }
             ]
         });
-        let value = serde_json::to_value(json_output::ok_item(payload)).unwrap();
+        let value = serde_json::to_value(markdown_output::ok_item(payload)).unwrap();
 
         assert_eq!(value["schema_version"], "1");
         assert_eq!(value["ok"], true);
@@ -405,7 +405,7 @@ mod tests {
                 location: None,
             }],
         };
-        let value = serde_json::to_value(json_output::ok_item(payload)).unwrap();
+        let value = serde_json::to_value(markdown_output::ok_item(payload)).unwrap();
 
         assert_eq!(value["schema_version"], "1");
         assert_eq!(value["ok"], true);

@@ -30,7 +30,7 @@ Then read the canonical planning docs in this order:
    - what must stay out of the final runtime
 5. \`PKU3B-AI-CLI-testing.md\`
    - coverage rules
-   - JSON contract expectations
+   - Markdown contract expectations
    - live and mocked test guidance
 
 ## Current implementation stance
@@ -45,9 +45,9 @@ Then read the canonical planning docs in this order:
 
 The first implementation slice in this thread focuses on:
 
-- introducing shared JSON-output helpers inside the Rust CLI layer
-- adding JSON support to selected high-value command families
-- keeping the human-readable CLI behavior intact when \`--json\` is not requested
+- introducing shared Markdown-output helpers inside the Rust CLI layer
+- adding Markdown support to selected high-value command families
+- keeping the human-readable CLI behavior intact when \`--markdown\` is not requested
 - allowing \`PKU_USERNAME\` and \`PKU_PASSWORD\` to bootstrap live tests without an interactive
   \`init\` step
 - failing clearly in non-interactive OTP-required flows instead of attempting a hidden prompt
@@ -56,13 +56,13 @@ The first implementation slice in this thread focuses on:
 
 Implemented so far:
 
-- \`course --json\`
-- \`cache --json\`
-- \`announcement --json\`
-- \`document --json\`
-- \`coursetable --json\`
-- \`assignment --json\`
-- \`find --json\`
-- \`search --json\`
-- \`tree --json\`
-- \`video --json\`
+- \`course --markdown\`
+- \`cache --markdown\`
+- \`announcement --markdown\`
+- \`document --markdown\`
+- \`coursetable --markdown\`
+- \`assignment --markdown\`
+- \`find --markdown\`
+- \`search --markdown\`
+- \`tree --markdown\`
+- \`video --markdown\`

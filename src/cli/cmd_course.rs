@@ -10,7 +10,7 @@ pub struct CommandCourse {
     #[command(subcommand)]
     command: CourseCommands,
 
-    #[arg(long, default_value = "false")]
+    #[arg(long = "markdown", visible_alias = "md", alias = "json", default_value = "false")]
     json: bool,
 
     #[arg(long, default_value = "")]
@@ -71,7 +71,7 @@ pub async fn list(force: bool, cur_term: bool, otp_code: String, json: bool) -> 
                 title: c.title().to_owned(),
             })
             .collect::<Vec<_>>();
-        return json_output::write_json(&json_output::ok_items(items)).await;
+        return markdown_output::write_markdown(&markdown_output::ok_items(items)).await;
     }
 
     println!("{D}>{D:#} {B}课程列表{B:#} {D}<{D:#}\n");
@@ -107,7 +107,7 @@ pub async fn entries(
     sort_entries(&mut pairs);
 
     if json {
-        return json_output::write_json(&json_output::ok_item(serde_json::json!({
+        return markdown_output::write_markdown(&markdown_output::ok_item(serde_json::json!({
             "course_index": course_index,
             "course_title": course.meta().title(),
             "entries": pairs,
@@ -179,7 +179,7 @@ mod tests {
                 url: "https://example.com".to_owned(),
             }],
         });
-        let value = serde_json::to_value(json_output::ok_item(payload)).unwrap();
+        let value = serde_json::to_value(markdown_output::ok_item(payload)).unwrap();
 
         assert_eq!(value["schema_version"], "1");
         assert_eq!(value["ok"], true);

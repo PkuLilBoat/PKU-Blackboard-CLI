@@ -12,7 +12,7 @@ pub struct CommandTree {
     #[command(subcommand)]
     command: TreeCommands,
 
-    #[arg(long, default_value = "false")]
+    #[arg(long = "markdown", visible_alias = "md", alias = "json", default_value = "false")]
     json: bool,
 
     #[arg(long, default_value = "")]
@@ -181,7 +181,7 @@ pub async fn list(
             nodes: contents.iter().map(node_record).collect(),
             summary_text,
         };
-        return json_output::write_json(&json_output::ok_item(item)).await;
+        return markdown_output::write_markdown(&markdown_output::ok_item(item)).await;
     }
 
     println!("{D}>{D:#} {B}课程内容树摘要{B:#} {D}<{D:#}");
@@ -209,7 +209,7 @@ pub async fn find(
     let (course, contents) = get_course_contents(force, course_index, otp_code).await?;
     let matches = collect_tree_find_matches(&contents, query);
     if json {
-        return json_output::write_json(&json_output::ok_item(serde_json::json!({
+        return markdown_output::write_markdown(&markdown_output::ok_item(serde_json::json!({
             "course_index": course_index,
             "course_title": course.meta().title(),
             "query": query,
@@ -291,7 +291,7 @@ mod tests {
                 match_type: "exact".to_owned(),
             }],
         });
-        let value = serde_json::to_value(json_output::ok_item(payload)).unwrap();
+        let value = serde_json::to_value(markdown_output::ok_item(payload)).unwrap();
 
         assert_eq!(value["schema_version"], "1");
         assert_eq!(value["item"]["matches"][0]["match_type"], "exact");
@@ -313,7 +313,7 @@ pub async fn kinds(
         .map(node_record)
         .collect::<Vec<_>>();
     if json {
-        return json_output::write_json(&json_output::ok_item(serde_json::json!({
+        return markdown_output::write_markdown(&markdown_output::ok_item(serde_json::json!({
             "course_index": course_index,
             "course_title": course.meta().title(),
             "kind": kind,

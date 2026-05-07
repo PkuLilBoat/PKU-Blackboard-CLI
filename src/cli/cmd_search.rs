@@ -19,8 +19,8 @@ pub struct CommandSearch {
     #[arg(long, default_value = "false")]
     all_term: bool,
 
-    /// 输出 JSON
-    #[arg(long, default_value = "false")]
+    /// 输出 Markdown
+    #[arg(long = "markdown", visible_alias = "md", alias = "json", default_value = "false")]
     json: bool,
 
     /// 手机令牌码。当需要使用 OTP 登录，但未提供此参数时，将会从命令行交互式读取 OTP 码。
@@ -60,7 +60,7 @@ pub async fn run(cmd: CommandSearch) -> anyhow::Result<()> {
     .await?;
 
     if cmd.json {
-        return json_output::write_json(&json_output::ok_item(serde_json::json!({
+        return markdown_output::write_markdown(&markdown_output::ok_item(serde_json::json!({
             "query": cmd.query,
             "kind": cmd.kind,
             "matches": results,
@@ -174,7 +174,7 @@ mod tests {
                 attachment_count: 1,
             }],
         });
-        let value = serde_json::to_value(json_output::ok_item(payload)).unwrap();
+        let value = serde_json::to_value(markdown_output::ok_item(payload)).unwrap();
 
         assert_eq!(value["schema_version"], "1");
         assert_eq!(value["item"]["matches"][0]["title"], "Week 1");

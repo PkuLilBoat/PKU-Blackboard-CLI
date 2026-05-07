@@ -5,7 +5,7 @@
 Use this as the thread goal:
 
 \`\`\`
-Build pku3b-ai-cli into a single-binary, low-level PKU Blackboard CLI that merges the useful command coverage of pku3b and the structured resource capabilities of pku3b_AI, emits stable JSON for major read and write commands, and does not depend on Python, MCP, or a long-running server.
+Build pku3b-ai-cli into a single-binary, low-level PKU Blackboard CLI that merges the useful command coverage of pku3b and the structured resource capabilities of pku3b_AI, emits stable Markdown for major read and write commands, and does not depend on Python, MCP, or a long-running server.
 \`\`\`
 
 This goal is intentionally short. The execution details should stay in repo docs so the agent
@@ -23,17 +23,17 @@ When a new agent starts work, apply these constraints:
    - one command = one narrow operation
    - deterministic matching and filtering
    - explicit file-writing and remote-mutating actions
-   - stable machine-readable JSON output
+   - stable machine-readable Markdown output
 5. preserve direct human CLI usability:
    - good help text
    - clear exit behavior
-   - readable default terminal output when \`--json\` is not requested
+   - readable default terminal output when \`--markdown\` is not requested
 
 Implementation direction:
 
 - modify and extend the existing Rust CLI foundation;
 - do not restart the Blackboard runtime from zero;
-- keep correct existing behavior where possible and add stable JSON contracts around it.
+- keep correct existing behavior where possible and add stable Markdown contracts around it.
 
 ## 3. Concrete completion criteria
 
@@ -42,7 +42,7 @@ The objective is only complete when all of the following are true:
 - a single Rust binary exists for the upgraded CLI;
 - the binary runs without Python, MCP, or a sidecar server;
 - the implemented milestone command families are documented explicitly;
-- major shipped read and write commands expose stable JSON contracts;
+- major shipped read and write commands expose stable Markdown contracts;
 - tests cover the shipped command surface at the level promised by
   \`docs/PKU3B-AI-CLI-testing.md\`;
 - the docs in this folder match the actual implementation.

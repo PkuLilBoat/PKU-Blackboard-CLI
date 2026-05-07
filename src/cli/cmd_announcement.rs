@@ -14,8 +14,8 @@ pub struct CommandAnnouncement {
     #[command(subcommand)]
     command: AnnouncementCommands,
 
-    /// 输出 JSON
-    #[arg(long, default_value = "false")]
+    /// 输出 Markdown
+    #[arg(long = "markdown", visible_alias = "md", alias = "json", default_value = "false")]
     json: bool,
 
     /// 手机令牌码。当需要使用 OTP 登录，但未提供此参数时，将会从命令行交互式读取 OTP 码。
@@ -162,7 +162,7 @@ pub async fn list(force: bool, cur_term: bool, otp_code: String, json: bool) -> 
                 attachment_count: announcement.attachments().len(),
             })
             .collect::<Vec<_>>();
-        json_output::write_json(&json_output::ok_items(items)).await
+        markdown_output::write_markdown(&markdown_output::ok_items(items)).await
     } else {
         list_brief(announcements).await
     }
@@ -227,7 +227,7 @@ pub async fn show(
                 })
                 .collect(),
         };
-        json_output::write_json(&json_output::ok_item(item)).await?;
+        markdown_output::write_markdown(&markdown_output::ok_item(item)).await?;
     } else {
         let mut outbuf = Vec::new();
         writeln!(outbuf, "{D}>{D:#} {B}公告详情{B:#} {D}<{D:#}\n")?;
@@ -370,7 +370,7 @@ mod tests {
                 url: "https://example.com/file.pdf".to_owned(),
             }],
         };
-        let value = serde_json::to_value(json_output::ok_item(detail)).unwrap();
+        let value = serde_json::to_value(markdown_output::ok_item(detail)).unwrap();
 
         assert_eq!(value["schema_version"], "1");
         assert_eq!(value["ok"], true);

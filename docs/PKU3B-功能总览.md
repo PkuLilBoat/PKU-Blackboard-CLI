@@ -17,7 +17,7 @@
 
 - 读取课程、公告、文档、树节点、视频、作业、课表等教学网资源
 - 执行下载、提交、缓存处理、配置初始化等原子操作
-- 用稳定的终端输出和 JSON 输出，把结果交给人或上层 AI
+- 用稳定的终端输出和 Markdown 输出，把结果交给人或上层 AI
 
 这意味着：
 
@@ -48,18 +48,18 @@
 
 ## 3. AI / 自动化最有价值的命令面
 
-如果从“适合 AI 调用”的角度看，当前最重要的是下面这些能力已经支持稳定 JSON：
+如果从“适合 AI 调用”的角度看，当前最重要的是下面这些能力已经支持稳定 Markdown：
 
-- `course --json`
-- `cache --json`
-- `announcement --json`
-- `document --json`
-- `coursetable --json`
-- `assignment --json`
-- `find --json`
-- `search --json`
-- `tree --json`
-- `video --json`
+- `course --markdown`
+- `cache --markdown`
+- `announcement --markdown`
+- `document --markdown`
+- `coursetable --markdown`
+- `assignment --markdown`
+- `find --markdown`
+- `search --markdown`
+- `tree --markdown`
+- `video --markdown`
 
 这批命令适合做：
 
@@ -100,7 +100,7 @@
 
 特点：
 
-- 支持 JSON 输出
+- 支持 Markdown 输出
 - 在某些 portal 路径 OTP 受限时，当前实现会走 Blackboard calendar fallback
 
 适合场景：
@@ -329,7 +329,7 @@
 当前这个项目已经具备几个很明显的优势：
 
 - 单文件 Rust CLI，部署轻
-- 既保留了原来对人友好的终端用法，也在补 AI 友好的 JSON 合同
+- 既保留了原来对人友好的终端用法，也在补 AI 友好的 Markdown 合同
 - 支持真实的下载和提交动作，不只是只读查询
 - 可以作为上层 AI skill、agent、脚本系统的稳定后端
 
@@ -340,7 +340,7 @@
 更准确的说法是：
 
 - 关键命令面已经打通
-- 核心 JSON 能力已经落地
+- 核心 Markdown 能力已经落地
 - 单测和关键真人 smoke test 已经过关
 - 但更深的集成测试、更多边缘路径和未来扩展仍然可以继续加强
 

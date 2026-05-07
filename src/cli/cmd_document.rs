@@ -13,7 +13,7 @@ pub struct CommandDocument {
     #[command(subcommand)]
     command: DocumentCommands,
 
-    #[arg(long, default_value = "false")]
+    #[arg(long = "markdown", visible_alias = "md", alias = "json", default_value = "false")]
     json: bool,
 
     #[arg(long, default_value = "")]
@@ -190,7 +190,7 @@ pub async fn list(force: bool, cur_term: bool, otp_code: String, json: bool) -> 
             })
             .collect::<Vec<_>>();
         sort_document_records(&mut items);
-        return json_output::write_json(&json_output::ok_items(items)).await;
+        return markdown_output::write_markdown(&markdown_output::ok_items(items)).await;
     }
 
     let mut outbuf = Vec::new();
@@ -286,7 +286,7 @@ mod tests {
                 url: "https://example.com/file.pdf".to_owned(),
             }],
         };
-        let value = serde_json::to_value(json_output::ok_item(detail)).unwrap();
+        let value = serde_json::to_value(markdown_output::ok_item(detail)).unwrap();
 
         assert_eq!(value["schema_version"], "1");
         assert_eq!(value["ok"], true);
@@ -323,7 +323,7 @@ pub async fn show(
                 })
                 .collect(),
         };
-        return json_output::write_json(&json_output::ok_item(detail)).await;
+        return markdown_output::write_markdown(&markdown_output::ok_item(detail)).await;
     }
 
     println!(
@@ -363,7 +363,7 @@ pub async fn download(
             .with_context(|| format!("document with id {} not found", id))?,
         None => {
             if json {
-                anyhow::bail!("document download with --json requires an explicit document id")
+                anyhow::bail!("document download with --markdown requires an explicit document id")
             }
             select_document(items).await?
         }
@@ -387,7 +387,7 @@ pub async fn download(
             title: item.2.title().to_owned(),
             path: dir.display().to_string(),
         };
-        json_output::write_json(&json_output::ok_item(result)).await?;
+        markdown_output::write_markdown(&markdown_output::ok_item(result)).await?;
     } else {
         println!("Done.");
     }
