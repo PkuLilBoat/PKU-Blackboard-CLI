@@ -28,7 +28,7 @@ compio = { version = "0.18", features = [
 ], default-features = false }
 cyper = { version = "0.8", default-features = false, features = [
     "cookies",
-    "rustls",
+    "native-tls",
 ] }
 directories = "6.0.0"
 env_logger = { version = "0.11", features = [

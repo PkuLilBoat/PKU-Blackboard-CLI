@@ -274,8 +274,12 @@ mod tests {
             .init();
 
         let c = LowLevelClient::new();
-        let username = std::env::var("PKU3B_TEST_USERNAME").unwrap();
-        let password = std::env::var("PKU3B_TEST_PASSWORD").unwrap();
+        let Some(username) = std::env::var("PKU3B_TEST_USERNAME").ok() else {
+            return;
+        };
+        let Some(password) = std::env::var("PKU3B_TEST_PASSWORD").ok() else {
+            return;
+        };
         c.sb_login(&username, &password).await.unwrap();
     }
 }

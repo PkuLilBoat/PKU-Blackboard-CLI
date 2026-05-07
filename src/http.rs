@@ -47,6 +47,11 @@ impl Client {
 
     /// Save the current cookie store to a JSON file.
     pub async fn save_set_cookies<P: AsRef<std::path::Path>>(&self, path: P) -> anyhow::Result<()> {
+        if let Some(parent) = path.as_ref().parent()
+            && !parent.exists()
+        {
+            compio::fs::create_dir_all(parent).await?;
+        }
         let mut buf = Vec::new();
         {
             let cookie_store = self.cookie_store.read().unwrap();

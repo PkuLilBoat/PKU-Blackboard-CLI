@@ -1,4 +1,5 @@
 use anyhow::Context;
+use serde::Serialize;
 
 use super::*;
 
@@ -10,6 +11,10 @@ pub struct CommandVideo {
 
     #[command(subcommand)]
     command: VideoCommands,
+
+    /// 输出 JSON
+    #[arg(long, default_value = "false")]
+    json: bool,
 
     /// 手机令牌码。当需要使用 OTP 登录，但未提供此参数时，将会从命令行交互式读取 OTP 码。
     #[arg(long, default_value = "")]
@@ -45,18 +50,56 @@ enum VideoCommands {
 
 pub async fn run(cmd: CommandVideo) -> anyhow::Result<()> {
     match cmd.command {
-        VideoCommands::List { all_term } => list(cmd.force, !all_term, cmd.otp_code).await?,
+        VideoCommands::List { all_term } => {
+            list(cmd.force, !all_term, cmd.otp_code, cmd.json).await?
+        }
         #[cfg(feature = "video-download")]
         VideoCommands::Download {
             outdir,
             id,
             all_term,
-        } => download(outdir.as_deref(), cmd.force, id, !all_term, cmd.otp_code).await?,
+        } => {
+            download(
+                outdir.as_deref(),
+                cmd.force,
+                id,
+                !all_term,
+                cmd.otp_code,
+                cmd.json,
+            )
+            .await?
+        }
     }
     Ok(())
 }
 
-pub async fn list(force: bool, cur_term: bool, otp_code: String) -> anyhow::Result<()> {
+#[derive(Serialize)]
+struct VideoListRecord {
+    course_title: String,
+    id: String,
+    title: String,
+    duration: String,
+}
+
+#[derive(Serialize)]
+struct VideoActionRecord {
+    action: String,
+    id: String,
+    course_title: String,
+    title: String,
+    output_path: String,
+}
+
+fn sort_video_records(records: &mut [VideoListRecord]) {
+    records.sort_by(|a, b| {
+        a.course_title
+            .cmp(&b.course_title)
+            .then_with(|| a.title.cmp(&b.title))
+            .then_with(|| a.id.cmp(&b.id))
+    });
+}
+
+pub async fn list(force: bool, cur_term: bool, otp_code: String, json: bool) -> anyhow::Result<()> {
     let courses = load_courses(force, cur_term, otp_code).await?;
 
     let pb = pbar::new(courses.len() as u64);
@@ -69,32 +112,48 @@ pub async fn list(force: bool, cur_term: bool, otp_code: String) -> anyhow::Resu
     let courses = try_join_all(futs).await?;
     pb.finish_and_clear();
 
-    let mut outbuf = Vec::new();
-    let title = "课程回放";
+    if json {
+        let mut items = Vec::new();
+        for (c, vs) in courses {
+            for v in vs {
+                items.push(VideoListRecord {
+                    course_title: c.meta().title().to_owned(),
+                    id: v.id(),
+                    title: v.meta().title().to_owned(),
+                    duration: v.meta().time().to_string(),
+                });
+            }
+        }
+        sort_video_records(&mut items);
+        json_output::write_json(&json_output::ok_items(items)).await?;
+    } else {
+        let mut outbuf = Vec::new();
+        let title = "课程回放";
 
-    writeln!(outbuf, "{D}>{D:#} {B}{title}{B:#} {D}<{D:#}\n")?;
+        writeln!(outbuf, "{D}>{D:#} {B}{title}{B:#} {D}<{D:#}\n")?;
 
-    for (c, vs) in courses {
-        if vs.is_empty() {
-            continue;
+        for (c, vs) in courses {
+            if vs.is_empty() {
+                continue;
+            }
+
+            writeln!(outbuf, "{BL}{H1}[{}]{H1:#}{BL:#}\n", c.meta().title())?;
+
+            for v in vs {
+                writeln!(
+                    outbuf,
+                    "{D}•{D:#} {} ({}) {D}{}{D:#}",
+                    v.meta().title(),
+                    v.meta().time(),
+                    v.id()
+                )?;
+            }
+
+            writeln!(outbuf)?;
         }
 
-        writeln!(outbuf, "{BL}{H1}[{}]{H1:#}{BL:#}\n", c.meta().title())?;
-
-        for v in vs {
-            writeln!(
-                outbuf,
-                "{D}•{D:#} {} ({}) {D}{}{D:#}",
-                v.meta().title(),
-                v.meta().time(),
-                v.id()
-            )?;
-        }
-
-        writeln!(outbuf)?;
+        buf_try!(@try fs::stdout().write_all(outbuf).await);
     }
-
-    buf_try!(@try fs::stdout().write_all(outbuf).await);
     Ok(())
 }
 
@@ -105,6 +164,7 @@ pub async fn download(
     id: String,
     cur_term: bool,
     otp_code: String,
+    json: bool,
 ) -> anyhow::Result<()> {
     let outdir = outdir.unwrap_or(std::path::Path::new("."));
     if !outdir.exists() {
@@ -139,7 +199,9 @@ pub async fn download(
 
     drop(sp);
 
-    println!("下载课程回放：{} ({})", v.course_name(), v.meta().title());
+    if !json {
+        println!("下载课程回放：{} ({})", v.course_name(), v.meta().title());
+    }
 
     // prepare download dir
     let dir = utils::projectdir()
@@ -184,10 +246,21 @@ pub async fn download(
     drop(sp);
 
     if c.status.success() {
-        println!(
-            "下载完成, 文件保存为: {GR}{H2}{}{H2:#}{GR:#}",
-            dest.display()
-        );
+        if json {
+            let item = VideoActionRecord {
+                action: "video.download".to_owned(),
+                id,
+                course_title: v.course_name().to_owned(),
+                title: v.meta().title().to_owned(),
+                output_path: dest.display().to_string(),
+            };
+            json_output::write_json(&json_output::ok_item(item)).await?;
+        } else {
+            println!(
+                "下载完成, 文件保存为: {GR}{H2}{}{H2:#}{GR:#}",
+                dest.display()
+            );
+        }
     } else {
         anyhow::bail!("ffmpeg failed with exit code {:?}", c.status.code());
     }
@@ -210,31 +283,94 @@ async fn download_segments(
     pb.tick();
 
     let mut key = None;
-    let mut paths = Vec::new();
-    // faster than try_join_all
+    let mut keys = Vec::with_capacity(tot);
     for i in 0..tot {
         key = v.refresh_key(i, key);
+        keys.push(key.cloned());
+    }
+
+    let dir = dir.to_path_buf();
+    let results = futures_util::stream::iter((0..tot).map(|i| {
+        let key = keys[i].clone();
         let path = dir.join(&v.segment(i).uri).with_extension("ts");
+        let pb = pb.clone();
 
-        if !path.exists() {
-            log::debug!("key: {key:?}");
-            let seg = v
-                .get_segment_data(i, key)
-                .await
-                .with_context(|| format!("get segment #{i} with key {key:?}"))?;
+        async move {
+            if !path.exists() {
+                log::debug!("key: {key:?}");
+                let seg = v
+                    .get_segment_data(i, key.as_ref())
+                    .await
+                    .with_context(|| format!("get segment #{i} with key {key:?}"))?;
 
-            // fs::write is not atomic, so we write to a tmp file first
-            let tmpath = path.with_extension("tmp");
-            buf_try!(@try fs::write(&tmpath, seg).await);
-            fs::rename(tmpath, &path).await.context("rename tmp file")?;
+                // fs::write is not atomic, so we write to a tmp file first.
+                let tmpath = path.with_extension("tmp");
+                buf_try!(@try fs::write(&tmpath, seg).await);
+                fs::rename(tmpath, &path).await.context("rename tmp file")?;
+            }
+
+            pb.inc(1);
+            Ok::<_, anyhow::Error>((i, path))
         }
+    }))
+    .buffer_unordered(16)
+    .collect::<Vec<_>>()
+    .await;
 
-        pb.inc(1);
-        paths.push(path);
+    let mut paths = vec![None; tot];
+    for result in results {
+        let (i, path) = result?;
+        paths[i] = Some(path);
     }
     pb.finish_and_clear();
 
-    Ok(paths)
+    Ok(paths
+        .into_iter()
+        .collect::<Option<Vec<_>>>()
+        .context("downloaded segment list incomplete")?)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sort_video_records_uses_deterministic_tie_breakers() {
+        let mut records = vec![
+            VideoListRecord {
+                course_title: "B".to_owned(),
+                id: "2".to_owned(),
+                title: "Video".to_owned(),
+                duration: "01:00".to_owned(),
+            },
+            VideoListRecord {
+                course_title: "A".to_owned(),
+                id: "1".to_owned(),
+                title: "Video".to_owned(),
+                duration: "01:00".to_owned(),
+            },
+        ];
+
+        sort_video_records(&mut records);
+
+        assert_eq!(records[0].course_title, "A");
+        assert_eq!(records[1].course_title, "B");
+    }
+
+    #[test]
+    fn video_action_record_serializes_output_path() {
+        let value = serde_json::to_value(VideoActionRecord {
+            action: "video.download".to_owned(),
+            id: "vid1".to_owned(),
+            course_title: "Course".to_owned(),
+            title: "Lecture".to_owned(),
+            output_path: "/tmp/video.mp4".to_owned(),
+        })
+        .unwrap();
+
+        assert_eq!(value["action"], "video.download");
+        assert_eq!(value["output_path"], "/tmp/video.mp4");
+    }
 }
 
 async fn merge_segments(

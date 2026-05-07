@@ -2,14 +2,21 @@ mod cmd_announcement;
 mod cmd_assignment;
 #[cfg(feature = "bark")]
 mod cmd_bark;
+mod cmd_course;
 mod cmd_course_table;
+mod cmd_document;
+mod cmd_find;
+mod cmd_search;
 mod cmd_syllabus;
 #[cfg(feature = "thesislib")]
 mod cmd_thesis_lib;
+mod cmd_tree;
 #[cfg(feature = "ttshitu")]
 mod cmd_ttshitu;
 mod cmd_video;
+mod json_output;
 mod pbar;
+mod query_match;
 
 use crate::api::{blackboard::*, syllabus::*};
 use crate::{api, build, config, utils, walkdir};
@@ -24,6 +31,7 @@ use compio::{
     io::{AsyncWrite, AsyncWriteExt},
 };
 use futures_util::{StreamExt, future::try_join_all};
+use std::io::IsTerminal as _;
 use std::io::Write as _;
 use utils::style::*;
 
@@ -54,6 +62,10 @@ enum Commands {
     #[command(name = "coursetable", visible_alias("ct"))]
     CourseTable(cmd_course_table::CommandCourseTable),
 
+    /// 获取课程列表和菜单入口
+    #[command(name = "course", visible_alias("c"), arg_required_else_help(true))]
+    Course(cmd_course::CommandCourse),
+
     /// 获取课程公告
     #[command(
         name = "announcement",
@@ -61,6 +73,20 @@ enum Commands {
         arg_required_else_help(true)
     )]
     Announcement(cmd_announcement::CommandAnnouncement),
+
+    #[command(name = "document", visible_alias("doc"), arg_required_else_help(true))]
+    Document(cmd_document::CommandDocument),
+
+    /// 按标题进行确定性查找
+    #[command(name = "find", visible_alias("f"), arg_required_else_help(true))]
+    Find(cmd_find::CommandFind),
+
+    /// 跨课程搜索结构化内容
+    #[command(name = "search", visible_alias("sfind"), arg_required_else_help(true))]
+    Search(cmd_search::CommandSearch),
+
+    #[command(name = "tree", visible_alias("t"), arg_required_else_help(true))]
+    Tree(cmd_tree::CommandTree),
 
     /// 获取课程回放/下载课程回放
     #[command(visible_alias("v"), arg_required_else_help(true))]
@@ -98,6 +124,9 @@ enum Commands {
 
     /// 查看缓存大小/清除缓存
     Cache {
+        /// 输出 JSON
+        #[arg(long, default_value = "false")]
+        json: bool,
         #[command(subcommand)]
         command: Option<CacheCommands>,
     },
@@ -139,6 +168,63 @@ async fn build_client(enable_cache: bool) -> anyhow::Result<api::Client> {
     builder.build().await
 }
 
+fn env_credentials() -> Option<(String, String)> {
+    let username = std::env::var("PKU_USERNAME").ok();
+    let password = std::env::var("PKU_PASSWORD").ok();
+    match (username, password) {
+        (Some(username), Some(password)) if !username.is_empty() && !password.is_empty() => {
+            Some((username, password))
+        }
+        _ => None,
+    }
+}
+
+pub async fn load_runtime_config() -> anyhow::Result<config::Config> {
+    let cfg_path = utils::default_config_path();
+    let env_creds = env_credentials();
+
+    match config::read_cfg(&cfg_path).await {
+        Ok(mut cfg) => {
+            if let Some((username, password)) = env_creds {
+                cfg.username = username;
+                cfg.password = password;
+            }
+            Ok(cfg)
+        }
+        Err(err) => {
+            if let Some((username, password)) = env_creds {
+                Ok(config::Config {
+                    username,
+                    password,
+                    ttshitu: None,
+                    bark: None,
+                    auto_supplement: None,
+                })
+            } else {
+                Err(err).context(
+                    "read config file or provide PKU_USERNAME and PKU_PASSWORD environment variables",
+                )
+            }
+        }
+    }
+}
+
+fn resolve_otp_code(required: bool, otp_code: String) -> anyhow::Result<String> {
+    if required && otp_code.is_empty() {
+        if !std::io::stdin().is_terminal() {
+            anyhow::bail!("OTP is required; rerun with --otp-code in non-interactive mode")
+        }
+        Ok(inquire::Text::new("请输入手机令牌（OTP）码: ").prompt()?)
+    } else {
+        Ok(otp_code)
+    }
+}
+
+fn is_incorrect_otp_error(err: &anyhow::Error) -> bool {
+    err.downcast_ref::<crate::api::low_level::iaaa::OAuthLoginError>()
+        .is_some_and(|e| e.code == "E05")
+}
+
 /// Client, courses and spinner are returned. Spinner hasn't stopped.
 async fn load_client_courses(
     force: bool,
@@ -150,27 +236,20 @@ async fn load_client_courses(
     let sp = pbar::new_spinner();
 
     sp.set_message("reading config...");
-    let cfg_path = utils::default_config_path();
-    let cfg = config::read_cfg(cfg_path)
-        .await
-        .context("read config file")?;
-
-    let otp_code = if client
-        .bb_login_require_otp(&cfg.username)
-        .await
-        .context("check if OTP is required")?
-        && otp_code.is_empty()
-    {
-        inquire::Text::new("请输入手机令牌（OTP）码: ").prompt()?
-    } else {
-        otp_code
-    };
+    let cfg = load_runtime_config().await?;
 
     sp.set_message("logging in to blackboard...");
-    let blackboard = client
-        .blackboard(&cfg.username, &cfg.password, &otp_code)
-        .await
-        .context("login to blackboard")?;
+    let blackboard = match client.blackboard(&cfg.username, &cfg.password, &otp_code).await {
+        Ok(blackboard) => blackboard,
+        Err(err) if otp_code.is_empty() && is_incorrect_otp_error(&err) => {
+            let otp_code = resolve_otp_code(true, otp_code)?;
+            client
+                .blackboard(&cfg.username, &cfg.password, &otp_code)
+                .await
+                .context("login to blackboard")?
+        }
+        Err(err) => return Err(err).context("login to blackboard"),
+    };
 
     sp.set_message("fetching courses...");
     let courses = blackboard
@@ -239,7 +318,16 @@ async fn command_init() -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn command_cache_clean(dry_run: bool) -> anyhow::Result<()> {
+#[derive(serde::Serialize)]
+struct CacheResult {
+    action: String,
+    dry_run: bool,
+    cache_dir: String,
+    size_bytes: u64,
+    size_gb: f64,
+}
+
+async fn command_cache_clean(dry_run: bool, json: bool) -> anyhow::Result<()> {
     let dir = utils::projectdir();
     log::info!("Cache dir: '{}'", dir.cache_dir().display());
     let sp = pbar::new_spinner();
@@ -272,7 +360,20 @@ async fn command_cache_clean(dry_run: bool) -> anyhow::Result<()> {
     drop(sp);
 
     let sizenum = total_bytes as f64 / 1024.0f64.powi(3);
-    if dry_run {
+    if json {
+        json_output::write_json(&json_output::ok_item(CacheResult {
+            action: if dry_run {
+                "cache.show".to_owned()
+            } else {
+                "cache.clean".to_owned()
+            },
+            dry_run,
+            cache_dir: dir.cache_dir().display().to_string(),
+            size_bytes: total_bytes,
+            size_gb: sizenum,
+        }))
+        .await?;
+    } else if dry_run {
         println!("缓存大小: {B}{sizenum:.2}GB{B:#}");
     } else {
         println!("缓存已清空 (释放 {B}{sizenum:.2}GB{B:#})");
@@ -285,19 +386,24 @@ pub async fn start(cli: Cli) -> anyhow::Result<()> {
         match command {
             Commands::Config { attr, value } => command_config(attr, value).await?,
             Commands::Init => command_init().await?,
-            Commands::Cache { command } => {
+            Commands::Cache { command, json } => {
                 if let Some(command) = command {
                     match command {
-                        CacheCommands::Clean => command_cache_clean(false).await?,
-                        CacheCommands::Show => command_cache_clean(true).await?,
+                        CacheCommands::Clean => command_cache_clean(false, json).await?,
+                        CacheCommands::Show => command_cache_clean(true, json).await?,
                     }
                 } else {
-                    command_cache_clean(true).await?
+                    command_cache_clean(true, json).await?
                 }
             }
             Commands::Assignment(cmd) => cmd_assignment::run(cmd).await?,
+            Commands::Course(cmd) => cmd_course::run(cmd).await?,
             Commands::CourseTable(cmd) => cmd_course_table::run(cmd).await?,
             Commands::Announcement(cmd) => cmd_announcement::run(cmd).await?,
+            Commands::Document(cmd) => cmd_document::run(cmd).await?,
+            Commands::Find(cmd) => cmd_find::run(cmd).await?,
+            Commands::Search(cmd) => cmd_search::run(cmd).await?,
+            Commands::Tree(cmd) => cmd_tree::run(cmd).await?,
             Commands::Video(cmd) => cmd_video::run(cmd).await?,
             Commands::Syllabus(cmd) => cmd_syllabus::run(cmd).await?,
 
@@ -323,4 +429,48 @@ pub async fn start(cli: Cli) -> anyhow::Result<()> {
 #[cfg(feature = "dev")]
 async fn command_debug() -> anyhow::Result<()> {
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn cache_result_fits_json_envelope() {
+        let value = serde_json::to_value(json_output::ok_item(CacheResult {
+            action: "cache.show".to_owned(),
+            dry_run: true,
+            cache_dir: "/tmp/cache".to_owned(),
+            size_bytes: 1024,
+            size_gb: 0.00000095367431640625,
+        }))
+        .unwrap();
+
+        assert_eq!(value["schema_version"], "1");
+        assert_eq!(value["ok"], true);
+        assert_eq!(value["item"]["action"], "cache.show");
+        assert_eq!(value["item"]["dry_run"], true);
+    }
+
+    #[test]
+    fn resolve_otp_code_returns_supplied_value_without_prompt() {
+        assert_eq!(
+            resolve_otp_code(false, "123456".to_owned()).unwrap(),
+            "123456"
+        );
+        assert_eq!(
+            resolve_otp_code(true, "654321".to_owned()).unwrap(),
+            "654321"
+        );
+    }
+
+    #[test]
+    fn detects_incorrect_otp_error() {
+        let err = crate::api::low_level::iaaa::OAuthLoginError {
+            code: "E05".to_owned(),
+            msg: "OTP Code is NOT correct.".to_owned(),
+        };
+        let err = anyhow::Error::new(err);
+        assert!(is_incorrect_otp_error(&err));
+    }
 }

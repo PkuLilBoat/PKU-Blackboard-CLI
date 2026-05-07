@@ -90,11 +90,10 @@ impl LowLevelClient {
                 log::debug!("{e}");
                 log::debug!("response body: {rbody}")
             })?;
-        anyhow::ensure!(data.success, "oauth login not success: {:?}", data);
-
         if let Some(err) = data.errors {
             return Err(err.into());
         }
+        anyhow::ensure!(data.success, "oauth login not success: {:?}", data);
 
         data.token.context("token not found")
     }

@@ -50,10 +50,7 @@ async fn command_thesis_lib_search(keyword: String) -> anyhow::Result<()> {
     let sp = pbar::new_spinner();
 
     sp.set_message("reading config...");
-    let cfg_path = utils::default_config_path();
-    let cfg = config::read_cfg(cfg_path)
-        .await
-        .context("read config file")?;
+    let cfg = load_runtime_config().await?;
 
     sp.set_message("logging in to thesis.lib.pku.edu.cn...");
     let c = c.thesis_lib(&cfg.username, &cfg.password).await?;
@@ -99,10 +96,7 @@ async fn command_thesis_lib_download(
     let sp = pbar::new_spinner();
 
     sp.set_message("reading config...");
-    let cfg_path = utils::default_config_path();
-    let cfg = config::read_cfg(cfg_path)
-        .await
-        .context("read config file")?;
+    let cfg = load_runtime_config().await?;
 
     sp.set_message("logging in to thesis.lib.pku.edu.cn...");
     let c = c.thesis_lib(&cfg.username, &cfg.password).await?;

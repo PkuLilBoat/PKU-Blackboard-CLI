@@ -160,6 +160,10 @@ pub struct CourseHandle {
 }
 
 impl CourseHandle {
+    pub fn title(&self) -> &str {
+        self.meta.title()
+    }
+
     pub async fn _get(&self) -> anyhow::Result<HashMap<String, String>> {
         let dom = self.client.bb_coursepage(&self.meta.id).await?;
 
@@ -565,6 +569,47 @@ pub struct CourseContent {
 }
 
 impl CourseContent {
+    pub fn id(&self) -> &str {
+        &self.data.id
+    }
+
+    pub fn title(&self) -> &str {
+        &self.data.title
+    }
+
+    pub fn kind_name(&self) -> &'static str {
+        match self.data.kind {
+            CourseContentKind::Document => "document",
+            CourseContentKind::Assignment => "assignment",
+            CourseContentKind::Announcement => "announcement",
+            CourseContentKind::Unknown => "unknown",
+        }
+    }
+
+    pub fn descriptions(&self) -> &[String] {
+        &self.data.descriptions
+    }
+
+    pub fn attachments(&self) -> &[(String, String)] {
+        &self.data.attachments
+    }
+
+    pub fn has_link(&self) -> bool {
+        self.data.has_link
+    }
+
+    pub fn into_document_opt(self) -> Option<CourseDocumentHandle> {
+        if let CourseContentKind::Document = self.data.kind {
+            Some(CourseDocumentHandle {
+                client: self.client,
+                course: self.course,
+                content: self.data,
+            })
+        } else {
+            None
+        }
+    }
+
     pub fn into_assignment_opt(self) -> Option<CourseAssignmentHandle> {
         if let CourseContentKind::Assignment = self.data.kind {
             Some(CourseAssignmentHandle {
@@ -575,6 +620,65 @@ impl CourseContent {
         } else {
             None
         }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct CourseDocumentHandle {
+    client: Client,
+    course: Arc<CourseMeta>,
+    content: Arc<CourseContentData>,
+}
+
+impl CourseDocumentHandle {
+    pub fn id(&self) -> String {
+        let mut hasher = std::hash::DefaultHasher::new();
+        self.course.id.hash(&mut hasher);
+        self.content.id.hash(&mut hasher);
+        let x = hasher.finish();
+        format!("{x:x}")
+    }
+
+    pub fn title(&self) -> &str {
+        &self.content.title
+    }
+
+    pub fn descriptions(&self) -> &[String] {
+        &self.content.descriptions
+    }
+
+    pub fn attachments(&self) -> &[(String, String)] {
+        &self.content.attachments
+    }
+
+    pub async fn download_attachment(
+        &self,
+        uri: &str,
+        dest: &std::path::Path,
+    ) -> anyhow::Result<()> {
+        log::debug!("downloading document attachment from https://course.pku.edu.cn{uri}");
+        let res = self.client.get_by_uri(uri).await?;
+        anyhow::ensure!(
+            res.status().as_u16() == 302,
+            "status not 302: {}",
+            res.status()
+        );
+
+        let loc = res
+            .headers()
+            .get("location")
+            .context("location header not found")?
+            .to_str()
+            .context("location header not str")?
+            .to_owned();
+
+        let res = self.client.get_by_uri(&loc).await?;
+        anyhow::ensure!(res.status().is_success(), "status not success");
+
+        let rbody = res.bytes().await?;
+        let r = compio::fs::write(dest, rbody).await;
+        compio::buf::buf_try!(@try r);
+        Ok(())
     }
 }
 

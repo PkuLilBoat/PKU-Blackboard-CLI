@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use anyhow::Context;
+use serde::Serialize;
 
 use super::*;
 
@@ -12,6 +13,10 @@ pub struct CommandAnnouncement {
 
     #[command(subcommand)]
     command: AnnouncementCommands,
+
+    /// 输出 JSON
+    #[arg(long, default_value = "false")]
+    json: bool,
 
     /// 手机令牌码。当需要使用 OTP 登录，但未提供此参数时，将会从命令行交互式读取 OTP 码。
     #[arg(long, default_value = "")]
@@ -39,12 +44,39 @@ enum AnnouncementCommands {
 
 pub async fn run(cmd: CommandAnnouncement) -> anyhow::Result<()> {
     match cmd.command {
-        AnnouncementCommands::List { all_term } => list(cmd.force, !all_term, cmd.otp_code).await?,
+        AnnouncementCommands::List { all_term } => {
+            list(cmd.force, !all_term, cmd.otp_code, cmd.json).await?
+        }
         AnnouncementCommands::Show { id, all_term } => {
-            show(cmd.force, !all_term, &id, cmd.otp_code).await?
+            show(cmd.force, !all_term, &id, cmd.otp_code, cmd.json).await?
         }
     }
     Ok(())
+}
+
+#[derive(Serialize)]
+struct AnnouncementListRecord {
+    course_title: String,
+    id: String,
+    title: String,
+    published_at: Option<String>,
+    attachment_count: usize,
+}
+
+#[derive(Serialize)]
+struct AnnouncementAttachmentRecord {
+    name: String,
+    url: String,
+}
+
+#[derive(Serialize)]
+struct AnnouncementDetailRecord {
+    course_title: String,
+    id: String,
+    title: String,
+    published_at: Option<String>,
+    descriptions: Vec<String>,
+    attachments: Vec<AnnouncementAttachmentRecord>,
 }
 
 type AnnouncementListItem = (Arc<Course>, String, CourseAnnouncementHandle);
@@ -107,7 +139,7 @@ async fn get_courses_and_announcements(
     Ok(courses)
 }
 
-pub async fn list(force: bool, cur_term: bool, otp_code: String) -> anyhow::Result<()> {
+pub async fn list(force: bool, cur_term: bool, otp_code: String, json: bool) -> anyhow::Result<()> {
     let courses = get_courses_and_announcements(force, cur_term, otp_code).await?;
     let all_announcements = courses
         .iter()
@@ -119,7 +151,21 @@ pub async fn list(force: bool, cur_term: bool, otp_code: String) -> anyhow::Resu
         .collect::<Vec<_>>();
 
     let announcements = sort_announcements_owned(all_announcements);
-    list_brief(announcements).await
+    if json {
+        let items = announcements
+            .into_iter()
+            .map(|(course, id, announcement)| AnnouncementListRecord {
+                course_title: course.meta().name().to_owned(),
+                id,
+                title: announcement.title().to_owned(),
+                published_at: announcement.time().map(|t| t.to_string()),
+                attachment_count: announcement.attachments().len(),
+            })
+            .collect::<Vec<_>>();
+        json_output::write_json(&json_output::ok_items(items)).await
+    } else {
+        list_brief(announcements).await
+    }
 }
 
 async fn list_brief(items: Vec<(Course, String, CourseAnnouncementHandle)>) -> anyhow::Result<()> {
@@ -147,7 +193,13 @@ async fn list_brief(items: Vec<(Course, String, CourseAnnouncementHandle)>) -> a
     Ok(())
 }
 
-pub async fn show(force: bool, cur_term: bool, id: &str, otp_code: String) -> anyhow::Result<()> {
+pub async fn show(
+    force: bool,
+    cur_term: bool,
+    id: &str,
+    otp_code: String,
+    json: bool,
+) -> anyhow::Result<()> {
     let items = fetch_announcements(force, cur_term, otp_code).await?;
     let Some((course, ann_id, announcement)) =
         items.into_iter().find(|(_, ann_id, _)| ann_id == id)
@@ -155,10 +207,34 @@ pub async fn show(force: bool, cur_term: bool, id: &str, otp_code: String) -> an
         anyhow::bail!("announcement with id {} not found", id);
     };
 
-    let mut outbuf = Vec::new();
-    writeln!(outbuf, "{D}>{D:#} {B}公告详情{B:#} {D}<{D:#}\n")?;
-    write_announcement_detail(&mut outbuf, &ann_id, &course, &announcement).context("io error")?;
-    buf_try!(@try fs::stdout().write_all(outbuf).await);
+    if json {
+        let item = AnnouncementDetailRecord {
+            course_title: course.meta().name().to_owned(),
+            id: ann_id,
+            title: announcement.title().to_owned(),
+            published_at: announcement.time().map(|t| t.to_string()),
+            descriptions: announcement
+                .descriptions()
+                .iter()
+                .map(|s| s.to_string())
+                .collect(),
+            attachments: announcement
+                .attachments()
+                .iter()
+                .map(|(name, url)| AnnouncementAttachmentRecord {
+                    name: name.to_string(),
+                    url: url.to_string(),
+                })
+                .collect(),
+        };
+        json_output::write_json(&json_output::ok_item(item)).await?;
+    } else {
+        let mut outbuf = Vec::new();
+        writeln!(outbuf, "{D}>{D:#} {B}公告详情{B:#} {D}<{D:#}\n")?;
+        write_announcement_detail(&mut outbuf, &ann_id, &course, &announcement)
+            .context("io error")?;
+        buf_try!(@try fs::stdout().write_all(outbuf).await);
+    }
     Ok(())
 }
 
@@ -172,6 +248,17 @@ fn sort_announcements_owned(
         (None, None) => std::cmp::Ordering::Equal,
     });
     items
+}
+
+#[cfg(test)]
+fn sort_announcement_records(records: &mut [AnnouncementListRecord]) {
+    records.sort_by(|a, b| {
+        b.published_at
+            .cmp(&a.published_at)
+            .then_with(|| a.course_title.cmp(&b.course_title))
+            .then_with(|| a.title.cmp(&b.title))
+            .then_with(|| a.id.cmp(&b.id))
+    });
 }
 
 fn sort_announcements_items(mut items: Vec<AnnouncementListItem>) -> Vec<AnnouncementListItem> {
@@ -239,4 +326,54 @@ async fn fetch_announcements(
 
     all_announcements = sort_announcements_items(all_announcements);
     Ok(all_announcements)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sort_announcement_records_uses_published_at_then_tie_breakers() {
+        let mut records = vec![
+            AnnouncementListRecord {
+                course_title: "B".to_owned(),
+                id: "2".to_owned(),
+                title: "Notice".to_owned(),
+                published_at: Some("2026-01-01 10:00:00".to_owned()),
+                attachment_count: 0,
+            },
+            AnnouncementListRecord {
+                course_title: "A".to_owned(),
+                id: "1".to_owned(),
+                title: "Notice".to_owned(),
+                published_at: Some("2026-01-01 10:00:00".to_owned()),
+                attachment_count: 0,
+            },
+        ];
+
+        sort_announcement_records(&mut records);
+
+        assert_eq!(records[0].course_title, "A");
+        assert_eq!(records[1].course_title, "B");
+    }
+
+    #[test]
+    fn announcement_detail_payload_fits_json_envelope() {
+        let detail = AnnouncementDetailRecord {
+            course_title: "Course".to_owned(),
+            id: "ann1".to_owned(),
+            title: "Notice".to_owned(),
+            published_at: Some("2026-01-01 10:00:00".to_owned()),
+            descriptions: vec!["desc".to_owned()],
+            attachments: vec![AnnouncementAttachmentRecord {
+                name: "file.pdf".to_owned(),
+                url: "https://example.com/file.pdf".to_owned(),
+            }],
+        };
+        let value = serde_json::to_value(json_output::ok_item(detail)).unwrap();
+
+        assert_eq!(value["schema_version"], "1");
+        assert_eq!(value["ok"], true);
+        assert_eq!(value["item"]["attachments"][0]["name"], "file.pdf");
+    }
 }

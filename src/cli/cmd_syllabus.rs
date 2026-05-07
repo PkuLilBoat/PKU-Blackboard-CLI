@@ -48,10 +48,7 @@ pub async fn show(dual: Option<DualDegree>) -> anyhow::Result<()> {
     let sp = pbar::new_spinner();
 
     sp.set_message("reading config...");
-    let cfg_path = utils::default_config_path();
-    let cfg = config::read_cfg(cfg_path)
-        .await
-        .context("read config file")?;
+    let cfg = load_runtime_config().await?;
 
     sp.set_message("logging in to syllabus...");
     let sy = c.syllabus(&cfg.username, &cfg.password, dual).await?;

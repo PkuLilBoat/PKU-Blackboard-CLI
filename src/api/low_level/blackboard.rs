@@ -14,6 +14,8 @@ pub const VIDEO_LIST: &str =
     "https://course.pku.edu.cn/webapps/bb-streammedia-hqy-BBLEARN/videoList.action";
 pub const VIDEO_SUB_INFO: &str =
     "https://yjapise.pku.edu.cn/courseapi/v2/schedule/get-sub-info-by-auth-data";
+pub const CALENDAR_SELECTED_EVENTS: &str =
+    "https://course.pku.edu.cn/webapps/calendar/calendarData/selectedCalendarEvents";
 
 #[derive(Debug)]
 pub struct BlackboardUnautherizedError;
@@ -27,11 +29,6 @@ impl std::fmt::Display for BlackboardUnautherizedError {
 }
 
 impl LowLevelClient {
-    pub async fn bb_login_require_otp(&self, username: &str) -> anyhow::Result<bool> {
-        let data = self.iaaa_is_mobile_authen("blackboard", username).await?;
-        Ok(data.authen_mode == "OTP")
-    }
-
     /// 使用 OAuth login 返回的 token 登录教学网。登录状态会记录在 client cookie 中，无需返回值.
     pub async fn bb_login(
         &self,
@@ -44,7 +41,7 @@ impl LowLevelClient {
         if data.is_no() {
             log::info!("unprotected login is allowed");
         } else {
-            log::warn!("unsupported login context: {data:?}")
+            log::debug!("non-standard blackboard login context: {data:?}")
         }
 
         let token = self
@@ -257,6 +254,34 @@ impl LowLevelClient {
                 ("with_sub_data", "1"),
                 ("app_id", app_id),
                 ("auth_data", auth_data),
+            ])?
+            .send()
+            .await?;
+
+        anyhow::ensure!(res.status().is_success(), "status not success");
+
+        let rbody = res.text().await?;
+        Ok(rbody)
+    }
+
+    /// 获取 Blackboard 个人日程中的已选事件（通常是作业、截止时间和个人事件）。
+    pub async fn bb_calendar_selected_events(
+        &self,
+        start_ms: i64,
+        end_ms: i64,
+    ) -> anyhow::Result<String> {
+        let start_ms = start_ms.to_string();
+        let end_ms = end_ms.to_string();
+        let course_id = String::new();
+        let mode = "personal".to_owned();
+        let res = self
+            .http_client
+            .get(CALENDAR_SELECTED_EVENTS)?
+            .query(&[
+                ("start", &start_ms),
+                ("end", &end_ms),
+                ("course_id", &course_id),
+                ("mode", &mode),
             ])?
             .send()
             .await?;

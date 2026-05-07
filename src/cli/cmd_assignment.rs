@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use anyhow::Context;
+use serde::Serialize;
 
 use super::*;
 
@@ -12,6 +13,10 @@ pub struct CommandAssignment {
 
     #[command(subcommand)]
     command: AssignmentCommands,
+
+    /// 输出 JSON
+    #[arg(long, default_value = "false")]
+    json: bool,
 
     /// 手机令牌码。当需要使用 OTP 登录，但未提供此参数时，将会从命令行交互式读取 OTP 码。
     #[arg(long, default_value = "")]
@@ -62,7 +67,14 @@ enum AssignmentCommands {
 pub async fn run(cmd: CommandAssignment) -> anyhow::Result<()> {
     match cmd.command {
         AssignmentCommands::List { all, all_term } => {
-            cmd_assignment::list(cmd.force, all || all_term, !all_term, cmd.otp_code).await?
+            cmd_assignment::list(
+                cmd.force,
+                all || all_term,
+                !all_term,
+                cmd.otp_code,
+                cmd.json,
+            )
+            .await?
         }
         AssignmentCommands::Download { id, dir, all_term } => {
             cmd_assignment::download(
@@ -72,17 +84,49 @@ pub async fn run(cmd: CommandAssignment) -> anyhow::Result<()> {
                 all_term,
                 !all_term,
                 cmd.otp_code,
+                cmd.json,
             )
             .await?
         }
         AssignmentCommands::Submit { id, path } => {
-            cmd_assignment::submit(id.as_deref(), path.as_deref(), cmd.otp_code).await?
+            cmd_assignment::submit(id.as_deref(), path.as_deref(), cmd.otp_code, cmd.json).await?
         }
     }
     Ok(())
 }
 
-async fn get_contents(
+#[derive(Serialize)]
+struct AssignmentListRecord {
+    course_title: String,
+    id: String,
+    title: String,
+    deadline: Option<String>,
+    deadline_raw: Option<String>,
+    submitted_at: Option<String>,
+    attachment_count: usize,
+    description_count: usize,
+}
+
+#[derive(Serialize)]
+struct AssignmentActionRecord {
+    action: String,
+    course_title: String,
+    id: String,
+    title: String,
+    path: String,
+}
+
+fn sort_assignment_records(records: &mut [AssignmentListRecord]) {
+    records.sort_by(|a, b| {
+        a.deadline
+            .cmp(&b.deadline)
+            .then_with(|| a.course_title.cmp(&b.course_title))
+            .then_with(|| a.title.cmp(&b.title))
+            .then_with(|| a.id.cmp(&b.id))
+    });
+}
+
+pub(crate) async fn get_contents(
     c: &Course,
     pb: indicatif::ProgressBar,
 ) -> anyhow::Result<Vec<CourseContent>> {
@@ -168,7 +212,13 @@ async fn get_courses_and_assignments(
     Ok(courses)
 }
 
-pub async fn list(force: bool, all: bool, cur_term: bool, otp_code: String) -> anyhow::Result<()> {
+pub async fn list(
+    force: bool,
+    all: bool,
+    cur_term: bool,
+    otp_code: String,
+    json: bool,
+) -> anyhow::Result<()> {
     let courses = get_courses_and_assignments(force, cur_term, otp_code).await?;
 
     let mut all_assignments = courses
@@ -184,7 +234,31 @@ pub async fn list(force: bool, all: bool, cur_term: bool, otp_code: String) -> a
 
     // sort by deadline
     log::debug!("sorting assignments...");
-    all_assignments.sort_by_cached_key(|(_, _, a)| a.deadline());
+    all_assignments.sort_by(|a, b| {
+        a.2.deadline()
+            .cmp(&b.2.deadline())
+            .then_with(|| a.0.meta().name().cmp(b.0.meta().name()))
+            .then_with(|| a.2.title().cmp(b.2.title()))
+            .then_with(|| a.1.cmp(&b.1))
+    });
+
+    if json {
+        let mut items = all_assignments
+            .into_iter()
+            .map(|(c, id, a)| AssignmentListRecord {
+                course_title: c.meta().name().to_owned(),
+                id,
+                title: a.title().to_owned(),
+                deadline: a.deadline().map(|d| d.to_rfc3339()),
+                deadline_raw: a.deadline_raw().map(|d| d.to_owned()),
+                submitted_at: a.last_attempt().map(|v| v.to_owned()),
+                attachment_count: a.attachments().len(),
+                description_count: a.descriptions().len(),
+            })
+            .collect::<Vec<_>>();
+        sort_assignment_records(&mut items);
+        return json_output::write_json(&json_output::ok_items(items)).await;
+    }
 
     // prepare output statements
     let mut outbuf = Vec::new();
@@ -230,7 +304,13 @@ async fn fetch_assignments(
 
     // sort by deadline
     log::debug!("sorting assignments...");
-    all_assignments.sort_by_cached_key(|(_, _, a)| a.deadline());
+    all_assignments.sort_by(|a, b| {
+        a.2.deadline()
+            .cmp(&b.2.deadline())
+            .then_with(|| a.0.meta().name().cmp(b.0.meta().name()))
+            .then_with(|| a.2.title().cmp(b.2.title()))
+            .then_with(|| a.1.cmp(&b.1))
+    });
 
     Ok(all_assignments)
 }
@@ -265,6 +345,7 @@ pub async fn download(
     all: bool,
     cur_term: bool,
     otp_code: String,
+    json: bool,
 ) -> anyhow::Result<()> {
     let items = fetch_assignments(force, all, cur_term, otp_code).await?;
     let a = match id {
@@ -272,11 +353,27 @@ pub async fn download(
             Some(r) => r,
             None => anyhow::bail!("assignment with id {} not found", id),
         },
-        None => select_assignment(items).await?,
+        None => {
+            if json {
+                anyhow::bail!("assignment download with --json requires an explicit assignment id")
+            }
+            select_assignment(items).await?
+        }
     };
 
     let sp = pbar::new_spinner();
-    download_data(sp, dir, &a.2).await?;
+    download_data(sp, dir, &a.2, !json).await?;
+
+    if json {
+        let item = AssignmentActionRecord {
+            action: "assignment.download".to_owned(),
+            course_title: a.0.meta().name().to_owned(),
+            id: a.1,
+            title: a.2.title().to_owned(),
+            path: dir.display().to_string(),
+        };
+        json_output::write_json(&json_output::ok_item(item)).await?;
+    }
 
     Ok(())
 }
@@ -285,6 +382,7 @@ async fn download_data(
     sp: pbar::AsyncSpinner,
     dir: &std::path::Path,
     a: &CourseAssignment,
+    print_done: bool,
 ) -> anyhow::Result<()> {
     if !dir.exists() {
         compio::fs::create_dir_all(dir).await?;
@@ -303,7 +401,9 @@ async fn download_data(
     }
 
     drop(sp);
-    println!("Done.");
+    if print_done {
+        println!("Done.");
+    }
     Ok(())
 }
 
@@ -311,20 +411,29 @@ pub async fn submit(
     id: Option<&str>,
     path: Option<&std::path::Path>,
     otp_code: String,
+    json: bool,
 ) -> anyhow::Result<()> {
     let items = fetch_assignments(false, false, true, otp_code).await?;
 
-    let (c, _, a) = match id {
+    let (c, assignment_id, a) = match id {
         Some(id) => match items.into_iter().find(|x| x.1 == id) {
             Some(r) => r,
             None => anyhow::bail!("assignment with id {} not found", id),
         },
-        None => select_assignment(items).await?,
+        None => {
+            if json {
+                anyhow::bail!("assignment submit with --json requires an explicit assignment id")
+            }
+            select_assignment(items).await?
+        }
     };
 
     let path = match path {
         Some(path) => path.to_owned(),
         None => {
+            if json {
+                anyhow::bail!("assignment submit with --json requires an explicit file path")
+            }
             // list the current dir and use inquire::Select to choose a file
 
             let mut options = Vec::new();
@@ -361,14 +470,27 @@ pub async fn submit(
 
     drop(sp);
 
-    println!(
-        "成功将 {GR}{H2}{}{H2:#}{GR:#} 提交至 {MG}{H1}{} {}{H1:#}{MG:#} 课程作业",
-        path.display(),
-        c.meta().name(),
-        a.title()
-    );
+    if json {
+        let item = AssignmentActionRecord {
+            action: "assignment.submit".to_owned(),
+            course_title: c.meta().name().to_owned(),
+            id: assignment_id,
+            title: a.title().to_owned(),
+            path: path.display().to_string(),
+        };
+        json_output::write_json(&json_output::ok_item(item)).await?;
+    } else {
+        println!(
+            "成功将 {GR}{H2}{}{H2:#}{GR:#} 提交至 {MG}{H1}{} {}{H1:#}{MG:#} 课程作业",
+            path.display(),
+            c.meta().name(),
+            a.title()
+        );
 
-    println!("{EM:}tips: 执行 {H2}pku3b a -f ls -a{H2:#} 可强制刷新缓存并查看作业完成状态{EM:#}");
+        println!(
+            "{EM:}tips: 执行 {H2}pku3b a -f ls -a{H2:#} 可强制刷新缓存并查看作业完成状态{EM:#}"
+        );
+    }
     Ok(())
 }
 
@@ -448,4 +570,55 @@ pub fn fmt_time_delta(delta: chrono::TimeDelta) -> String {
     }
     res.push_str(&format!("{}s", delta.as_secs()));
     format!("{s}{res}{s:#}")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sort_assignment_records_uses_tie_breakers() {
+        let mut records = vec![
+            AssignmentListRecord {
+                course_title: "B".to_owned(),
+                id: "2".to_owned(),
+                title: "Week 1".to_owned(),
+                deadline: Some("2026-01-01T00:00:00+00:00".to_owned()),
+                deadline_raw: None,
+                submitted_at: None,
+                attachment_count: 0,
+                description_count: 0,
+            },
+            AssignmentListRecord {
+                course_title: "A".to_owned(),
+                id: "1".to_owned(),
+                title: "Week 1".to_owned(),
+                deadline: Some("2026-01-01T00:00:00+00:00".to_owned()),
+                deadline_raw: None,
+                submitted_at: None,
+                attachment_count: 0,
+                description_count: 0,
+            },
+        ];
+
+        sort_assignment_records(&mut records);
+
+        assert_eq!(records[0].course_title, "A");
+        assert_eq!(records[1].course_title, "B");
+    }
+
+    #[test]
+    fn assignment_action_record_serializes_path() {
+        let value = serde_json::to_value(AssignmentActionRecord {
+            action: "assignment.download".to_owned(),
+            course_title: "Course".to_owned(),
+            id: "abc".to_owned(),
+            title: "Week 1".to_owned(),
+            path: "/tmp/out".to_owned(),
+        })
+        .unwrap();
+
+        assert_eq!(value["action"], "assignment.download");
+        assert_eq!(value["path"], "/tmp/out");
+    }
 }
