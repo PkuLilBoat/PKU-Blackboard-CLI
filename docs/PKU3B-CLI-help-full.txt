@@ -1,0 +1,441 @@
+## pku3b -h
+
+A tool for PKU students to check their courses.
+
+Usage: pku3b [COMMAND]
+
+Commands:
+  assignment    获取课程作业信息/下载附件/提交作业 [aliases: a]
+  coursetable   获取个人课表 [aliases: ct]
+  course        获取课程列表和菜单入口 [aliases: c]
+  announcement  获取课程公告 [aliases: ann]
+  document      [aliases: doc]
+  find          按标题进行确定性查找 [aliases: f]
+  search        跨课程搜索结构化内容 [aliases: sfind]
+  tree          [aliases: t]
+  video         获取课程回放/下载课程回放 [aliases: v]
+  syllabus      选课操作 [aliases: s]
+  ttshitu       图形验证码识别 [aliases: tt]
+  bark          Bark通知设置 [aliases: b]
+  thesis-lib    学位论文检索 [aliases: th]
+  init          (重新) 初始化用户名/密码
+  config        显示或修改配置项
+  cache         查看缓存大小/清除缓存
+  help          Print this message or the help of the given subcommand(s)
+
+Options:
+  -h, --help     Print help (see more with '--help')
+  -V, --version  Print version
+
+## pku3b assignment -h
+
+获取课程作业信息/下载附件/提交作业
+
+Usage: pku3b assignment [OPTIONS] <COMMAND>
+
+Commands:
+  list      查看作业列表，按照截止日期排序 [aliases: ls]
+  download  下载作业要求和附件到指定文件夹下 [aliases: down]
+  submit    提交课程作业 [aliases: sb]
+  help      Print this message or the help of the given subcommand(s)
+
+Options:
+  -f, --force                强制刷新
+      --json                 输出 JSON
+      --otp-code <OTP_CODE>  手机令牌码。当需要使用 OTP 登录，但未提供此参数时，将会从命令行交互式读取 OTP 码。 [default: ""]
+  -h, --help                 Print help
+
+## pku3b coursetable -h
+
+获取个人课表
+
+Usage: pku3b coursetable [OPTIONS]
+
+Options:
+  -f, --force                强制刷新
+  -r, --raw                  显示原始 JSON 数据（用于调试）
+      --json                 输出 JSON 包装结果
+      --otp-code <OTP_CODE>  手机令牌码。当需要使用 OTP 登录，但未提供此参数时，将会从命令行交互式读取 OTP 码。 [default: ""]
+  -h, --help                 Print help
+
+## pku3b course -h
+
+获取课程列表和菜单入口
+
+Usage: pku3b course [OPTIONS] <COMMAND>
+
+Commands:
+  list     [aliases: ls]
+  entries  
+  help     Print this message or the help of the given subcommand(s)
+
+Options:
+  -f, --force                
+      --json                 
+      --otp-code <OTP_CODE>  [default: ""]
+  -h, --help                 Print help
+
+## pku3b announcement -h
+
+获取课程公告
+
+Usage: pku3b announcement [OPTIONS] <COMMAND>
+
+Commands:
+  list  查看课程公告列表 [aliases: ls]
+  show  按 ID 查看公告详情
+  help  Print this message or the help of the given subcommand(s)
+
+Options:
+  -f, --force                强制刷新
+      --json                 输出 JSON
+      --otp-code <OTP_CODE>  手机令牌码。当需要使用 OTP 登录，但未提供此参数时，将会从命令行交互式读取 OTP 码。 [default: ""]
+  -h, --help                 Print help
+
+## pku3b document -h
+
+Usage: pku3b document [OPTIONS] <COMMAND>
+
+Commands:
+  list      [aliases: ls]
+  show      
+  download  [aliases: down]
+  help      Print this message or the help of the given subcommand(s)
+
+Options:
+  -f, --force                
+      --json                 
+      --otp-code <OTP_CODE>  [default: ""]
+  -h, --help                 Print help
+
+## pku3b find -h
+
+按标题进行确定性查找
+
+Usage: pku3b find [OPTIONS] <QUERY>
+
+Arguments:
+  <QUERY>  标题关键词或完整标题
+
+Options:
+  -f, --force                        
+      --kind <KIND>                  仅搜索某一种内容类型，例如 assignment/document/announcement
+      --course-index <COURSE_INDEX>  仅在指定课程索引内搜索
+      --all-term                     显示所有学期
+      --json                         输出 JSON
+      --otp-code <OTP_CODE>          手机令牌码。当需要使用 OTP 登录，但未提供此参数时，将会从命令行交互式读取 OTP 码。 [default: ""]
+  -h, --help                         Print help
+
+## pku3b search -h
+
+跨课程搜索结构化内容
+
+Usage: pku3b search [OPTIONS] <QUERY>
+
+Arguments:
+  <QUERY>  搜索关键词
+
+Options:
+  -f, --force                
+      --kind <KIND>          仅搜索某一种内容类型，例如 assignment/document/announcement
+      --all-term             显示所有学期
+      --json                 输出 JSON
+      --otp-code <OTP_CODE>  手机令牌码。当需要使用 OTP 登录，但未提供此参数时，将会从命令行交互式读取 OTP 码。 [default: ""]
+  -h, --help                 Print help
+
+## pku3b tree -h
+
+Usage: pku3b tree [OPTIONS] <COMMAND>
+
+Commands:
+  list   [aliases: summary]
+  find   
+  kinds  
+  help   Print this message or the help of the given subcommand(s)
+
+Options:
+  -f, --force                
+      --json                 
+      --otp-code <OTP_CODE>  [default: ""]
+  -h, --help                 Print help
+
+## pku3b video -h
+
+获取课程回放/下载课程回放
+
+Usage: pku3b video [OPTIONS] <COMMAND>
+
+Commands:
+  list      获取课程回放列表 [aliases: ls]
+  download  下载课程回放视频 (MP4 格式)，支持断点续传 [aliases: down]
+  help      Print this message or the help of the given subcommand(s)
+
+Options:
+  -f, --force                强制刷新
+      --json                 输出 JSON
+      --otp-code <OTP_CODE>  手机令牌码。当需要使用 OTP 登录，但未提供此参数时，将会从命令行交互式读取 OTP 码。 [default: ""]
+  -h, --help                 Print help
+
+## pku3b syllabus -h
+
+选课操作
+
+Usage: pku3b syllabus [OPTIONS] <COMMAND>
+
+Commands:
+  show    查看选课结果
+  set     选择课程并配置快捷选课
+  unset   取消课程的快捷选课配置
+  launch  启动自动补退选程序
+  help    Print this message or the help of the given subcommand(s)
+
+Options:
+  -d, --dual <DUAL>  双学位类型 [possible values: major, minor]
+  -h, --help         Print help
+
+## pku3b ttshitu -h
+
+图形验证码识别
+
+Usage: pku3b ttshitu <COMMAND>
+
+Commands:
+  init  初始化图形验证码识别账户
+  test  测试图形验证码识别
+  help  Print this message or the help of the given subcommand(s)
+
+Options:
+  -h, --help  Print help
+
+## pku3b bark -h
+
+Bark通知设置
+
+Usage: pku3b bark <COMMAND>
+
+Commands:
+  init  初始化 Bark 通知令牌
+  test  测试 Bark 通知
+  help  Print this message or the help of the given subcommand(s)
+
+Options:
+  -h, --help  Print help
+
+## pku3b thesis-lib -h
+
+学位论文检索
+
+Usage: pku3b thesis-lib <COMMAND>
+
+Commands:
+  search    搜索学位论文
+  download  下载学位论文并转换为 PDF 文件 [aliases: down]
+  help      Print this message or the help of the given subcommand(s)
+
+Options:
+  -h, --help  Print help
+
+## pku3b init -h
+
+(重新) 初始化用户名/密码
+
+Usage: pku3b init
+
+Options:
+  -h, --help  Print help
+
+## pku3b config -h
+
+显示或修改配置项
+
+Usage: pku3b config [ATTR] [VALUE]
+
+Arguments:
+  [ATTR]   [possible values: username, password, ttshitu.username, ttshitu.password, bark.token]
+  [VALUE]  属性值
+
+Options:
+  -h, --help  Print help
+
+## pku3b cache -h
+
+查看缓存大小/清除缓存
+
+Usage: pku3b cache [OPTIONS] [COMMAND]
+
+Commands:
+  show   查看缓存大小
+  clean  清除缓存
+  help   Print this message or the help of the given subcommand(s)
+
+Options:
+      --json  输出 JSON
+  -h, --help  Print help
+
+## pku3b assignment list -h
+
+查看作业列表，按照截止日期排序
+
+Usage: pku3b assignment list [OPTIONS]
+
+Options:
+  -a, --all       显示所有作业，包括已完成的
+      --all-term  显示所有学期的作业（包括已完成的）
+  -h, --help      Print help
+
+## pku3b assignment download -h
+
+下载作业要求和附件到指定文件夹下
+
+Usage: pku3b assignment download [OPTIONS] [ID]
+
+Arguments:
+  [ID]  (Optionl) 作业 ID (ID 形如 `f4f30444c7485d49`, 可通过 `pku3b assignment list` 查看)
+
+Options:
+  -d, --dir <DIR>  文件下载目录 (支持相对路径) [default: .]
+      --all-term   在所有学期的作业范围中查找
+  -h, --help       Print help (see more with '--help')
+
+## pku3b assignment submit -h
+
+提交课程作业
+
+Usage: pku3b assignment submit [ID] [PATH]
+
+Arguments:
+  [ID]    作业 ID (形如 `f4f30444c7485d49`, 可通过 `pku3b assignment list` 查看)
+  [PATH]  提交文件路径
+
+Options:
+  -h, --help  Print help (see more with '--help')
+
+## pku3b course list -h
+
+Usage: pku3b course list [OPTIONS]
+
+Options:
+      --all-term  
+  -h, --help      Print help
+
+## pku3b course entries -h
+
+Usage: pku3b course entries [OPTIONS] <COURSE_INDEX>
+
+Arguments:
+  <COURSE_INDEX>  
+
+Options:
+      --all-term  
+  -h, --help      Print help
+
+## pku3b announcement list -h
+
+查看课程公告列表
+
+Usage: pku3b announcement list [OPTIONS]
+
+Options:
+      --all-term  显示所有学期的课程公告
+  -h, --help      Print help
+
+## pku3b announcement show -h
+
+按 ID 查看公告详情
+
+Usage: pku3b announcement show [OPTIONS] <ID>
+
+Arguments:
+  <ID>  公告 ID（可通过 `pku3b announcement ls` 查看）
+
+Options:
+      --all-term  在所有学期的课程公告范围中查找
+  -h, --help      Print help
+
+## pku3b document list -h
+
+Usage: pku3b document list [OPTIONS]
+
+Options:
+      --all-term  
+  -h, --help      Print help
+
+## pku3b document show -h
+
+Usage: pku3b document show [OPTIONS] <ID>
+
+Arguments:
+  <ID>  
+
+Options:
+      --all-term  
+  -h, --help      Print help
+
+## pku3b document download -h
+
+Usage: pku3b document download [OPTIONS] [ID]
+
+Arguments:
+  [ID]  
+
+Options:
+  -d, --dir <DIR>  [default: .]
+      --all-term   
+  -h, --help       Print help
+
+## pku3b tree list -h
+
+Usage: pku3b tree list <COURSE_INDEX>
+
+Arguments:
+  <COURSE_INDEX>  
+
+Options:
+  -h, --help  Print help
+
+## pku3b tree find -h
+
+Usage: pku3b tree find <COURSE_INDEX> <QUERY>
+
+Arguments:
+  <COURSE_INDEX>  
+  <QUERY>         
+
+Options:
+  -h, --help  Print help
+
+## pku3b tree kinds -h
+
+Usage: pku3b tree kinds <COURSE_INDEX> <KIND>
+
+Arguments:
+  <COURSE_INDEX>  
+  <KIND>          
+
+Options:
+  -h, --help  Print help
+
+## pku3b video list -h
+
+获取课程回放列表
+
+Usage: pku3b video list [OPTIONS]
+
+Options:
+      --all-term  显示所有学期的课程回放
+  -h, --help      Print help
+
+## pku3b video download -h
+
+下载课程回放视频 (MP4 格式)，支持断点续传
+
+Usage: pku3b video download [OPTIONS] <ID>
+
+Arguments:
+  <ID>  课程回放 ID (形如 `e780808c9eb81f61`, 可通过 `pku3b video list` 查看)
+
+Options:
+      --all-term         在所有学期的课程回放范围中查找
+  -o, --outdir <OUTDIR>  文件下载目录 (支持相对路径)
+  -h, --help             Print help
+
